@@ -2156,6 +2156,15 @@ public class LuaValue extends Varargs {
 	 */
 	public boolean raweq( int val )           { return false; }
 
+	/** Equals: Perform direct equality comparison with a long value
+	 * without metatag processing.
+	 * @param val The long value to compare with.
+	 * @return  true if {@code this} is a {@link LuaNumber}
+	 * whose value equals val,
+	 * otherwise false
+	 */
+	public boolean raweq( long val )          { return false; }
+
 	/** Perform equality testing metatag processing
 	 * @param lhs left-hand-side of equality expression
 	 * @param lhsmt metatag value for left-hand-side
@@ -2213,6 +2222,19 @@ public class LuaValue extends Varargs {
 	 * @see #add(LuaValue)
 	 */
 	public LuaValue   add(int rhs)            { return add((double)rhs); }
+	
+	/** Add: Perform numeric add operation with a long value
+	 * without metatag processing.
+	 * <p>
+	 * {@code this} must derive from {@link LuaNumber}
+	 * or derive from {@link LuaString} and be convertible to a number
+	 * 
+	 * @param rhs The right-hand-side value to perform the add with
+	 * @return  value of {@code (this + rhs)} if this is numeric
+	 * @throws LuaError if {@code this} is not a number or string convertible to number
+	 * @see #add(LuaValue)
+	 */
+	public LuaValue   add(long rhs)           { return add((double)rhs); }
 	
 	/** Subtract: Perform numeric subtract operation with another value
 	 * of unknown type,
@@ -2538,6 +2560,7 @@ public class LuaValue extends Varargs {
 	public LuaValue   shl( LuaValue rhs )        { return arithmt(SHL,rhs); }
 	public LuaValue   shl( int rhs )            { return arithmt(SHL, valueOf(rhs)); }
 	public LuaValue   shl( double rhs )         { return arithmt(SHL, valueOf(rhs)); }
+	public LuaValue   shl( long rhs )           { return arithmt(SHL, valueOf(rhs)); }
 	
 	/** Shift right: Perform bitwise right shift operation with another value
 	 * of unknown type, including metatag processing.
@@ -2554,6 +2577,7 @@ public class LuaValue extends Varargs {
 	public LuaValue   shr( LuaValue rhs )        { return arithmt(SHR,rhs); }
 	public LuaValue   shr( int rhs )            { return arithmt(SHR, valueOf(rhs)); }
 	public LuaValue   shr( double rhs )         { return arithmt(SHR, valueOf(rhs)); }
+	public LuaValue   shr( long rhs )            { return arithmt(SHR, valueOf(rhs)); }
 	
 	/** Bitwise and: Perform bitwise AND operation with another value
 	 * of unknown type, including metatag processing.
@@ -2570,6 +2594,7 @@ public class LuaValue extends Varargs {
 	public LuaValue   band( LuaValue rhs )        { return arithmt(BAND,rhs); }
 	public LuaValue   band( int rhs )            { return arithmt(BAND, valueOf(rhs)); }
 	public LuaValue   band( double rhs )         { return arithmt(BAND, valueOf(rhs)); }
+	public LuaValue   band( long rhs )            { return arithmt(BAND, valueOf(rhs)); }
 	
 	/** Bitwise or: Perform bitwise OR operation with another value
 	 * of unknown type, including metatag processing.
@@ -2586,6 +2611,7 @@ public class LuaValue extends Varargs {
 	public LuaValue   bor( LuaValue rhs )        { return arithmt(BOR,rhs); }
 	public LuaValue   bor( int rhs )            { return arithmt(BOR, valueOf(rhs)); }
 	public LuaValue   bor( double rhs )         { return arithmt(BOR, valueOf(rhs)); }
+	public LuaValue   bor( long rhs )            { return arithmt(BOR, valueOf(rhs)); }
 	
 	/** Bitwise xor: Perform bitwise XOR operation with another value
 	 * of unknown type, including metatag processing.
@@ -2602,6 +2628,7 @@ public class LuaValue extends Varargs {
 	public LuaValue   bxor( LuaValue rhs )        { return arithmt(BXOR,rhs); }
 	public LuaValue   bxor( int rhs )            { return arithmt(BXOR, valueOf(rhs)); }
 	public LuaValue   bxor( double rhs )         { return arithmt(BXOR, valueOf(rhs)); }
+	public LuaValue   bxor( long rhs )            { return arithmt(BXOR, valueOf(rhs)); }
 	
 	/** Bitwise not: Perform bitwise NOT operation
 	 * including metatag processing.
@@ -3272,6 +3299,15 @@ public class LuaValue extends Varargs {
 	 * @return {@link LuaInteger} instance, possibly pooled, whose value is i
 	 */
 	public static LuaInteger  valueOf(int i)        { return LuaInteger.valueOf(i); }
+	
+	/** Convert java long to a {@link LuaValue}.
+	 * This may return a {@link LuaInteger}, {@link LuaLong}, or {@link LuaDouble} depending
+	 * on the value supplied.
+	 * 
+	 * @param l long value to convert
+	 * @return {@link LuaNumber} instance, possibly pooled, whose value is l
+	 */
+	public static LuaNumber   valueOf(long l)       { return LuaLong.valueOf(l); };
 	
 	/** Convert java double to a {@link LuaValue}.
 	 * This may return a {@link LuaInteger} or {@link LuaDouble} depending

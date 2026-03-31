@@ -32,5 +32,18 @@ public class test_bitwise {
         // Test more complex expressions
         LuaValue result7 = globals.load("return (1 << 4) + (15 & 7)").call();
         System.out.println("(1 << 4) + (15 & 7) = " + result7.tojstring());
+        
+        // Test large numbers that exceed int range
+        LuaValue result8 = globals.load("return 4294967296").call();
+        System.out.println("4294967296 = " + result8.tojstring() + " islong=" + result8.islong());
+        
+        LuaValue result9 = globals.load("return 4294967296 + 1").call();
+        System.out.println("4294967296 + 1 = " + result9.tojstring());
+        
+        LuaValue result10 = globals.load("return 1 << 40").call();
+        System.out.println("1 << 40 = " + result10.tojstring() + " islong=" + result10.islong());
+        
+        LuaValue result11 = globals.load("return 0xFFFFFFFF & 0xFFFF").call();
+        System.out.println("0xFFFFFFFF & 0xFFFF = " + result11.tojstring());
     }
 }
