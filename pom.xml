@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+  <groupId>org.luaj</groupId>
+  <artifactId>luaj-jse</artifactId>
+  <version>3.0.2</version>
+  <packaging>jar</packaging>
+  <name>LuaJ JSE</name>
+  <properties>
+    <maven.compiler.source>1.8</maven.compiler.source>
+    <maven.compiler.target>1.8</maven.compiler.target>
+    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+  </properties>
+  <dependencies>
+    <dependency>
+      <groupId>org.apache.bcel</groupId>
+      <artifactId>bcel</artifactId>
+      <version>5.2</version>
+    </dependency>
+  </dependencies>
+  <build>
+    <sourceDirectory>src</sourceDirectory>
+    <plugins>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-compiler-plugin</artifactId>
+        <version>3.15.0</version>
+        <configuration>
+          <includes>
+            <include>core/**/*.java</include>
+            <include>jse/org/luaj/vm2/lib/**/*.java</include>
+            <include>jse/org/luaj/vm2/ast/**/*.java</include>
+            <include>jse/org/luaj/vm2/parser/**/*.java</include>
+            <include>jse/org/luaj/vm2/script/**/*.java</include>
+            <include>jse/org/luaj/vm2/server/**/*.java</include>
+            <include>jse/org/luaj/vm2/luajc/**/*.java</include>
+          </includes>
+        </configuration>
+      </plugin>
+    </plugins>
+  </build>
+</project>

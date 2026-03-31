@@ -893,6 +893,21 @@ public class FuncState extends Constants {
 		case OP_POW:
 			r = v1.pow(v2);
 			break;
+		case OP_SHL:
+			r = v1.shl((int) v2.todouble());
+			break;
+		case OP_SHR:
+			r = v1.shr((int) v2.todouble());
+			break;
+		case OP_BAND:
+			r = v1.band(v2);
+			break;
+		case OP_BOR:
+			r = v1.bor(v2);
+			break;
+		case OP_BXOR:
+			r = v1.bxor(v2);
+			break;
 		case OP_UNM:
 			r = v1.neg();
 			break;
@@ -968,6 +983,15 @@ public class FuncState extends Constants {
 			this.codearith(OP_LEN, e, e2, line);
 			break;
 		}
+		case LexState.OPR_BNOT: {
+			if (e.isnumeral())  /* bitwise not constant? */
+				e.u.setNval(e.u.nval().bnot());  /* fold it */
+		    else {
+		       this.exp2anyreg(e);
+		       this.codearith(OP_BNOT, e, e2, line);
+		    }
+			break;
+		}
 		default:
 			_assert (false);
 		}
@@ -992,7 +1016,12 @@ public class FuncState extends Constants {
 		case LexState.OPR_MUL:
 		case LexState.OPR_DIV:
 		case LexState.OPR_MOD:
-		case LexState.OPR_POW: {
+		case LexState.OPR_POW:
+		case LexState.OPR_SHL:
+		case LexState.OPR_SHR:
+		case LexState.OPR_BAND:
+		case LexState.OPR_BOR:
+		case LexState.OPR_BXOR: {
 			if (!v.isnumeral())
 				this.exp2RK(v);
 			break;
@@ -1055,6 +1084,21 @@ public class FuncState extends Constants {
 			break;
 		case LexState.OPR_POW:
 			this.codearith(OP_POW, e1, e2, line);
+			break;
+		case LexState.OPR_SHL:
+			this.codearith(OP_SHL, e1, e2, line);
+			break;
+		case LexState.OPR_SHR:
+			this.codearith(OP_SHR, e1, e2, line);
+			break;
+		case LexState.OPR_BAND:
+			this.codearith(OP_BAND, e1, e2, line);
+			break;
+		case LexState.OPR_BOR:
+			this.codearith(OP_BOR, e1, e2, line);
+			break;
+		case LexState.OPR_BXOR:
+			this.codearith(OP_BXOR, e1, e2, line);
 			break;
 		case LexState.OPR_EQ:
 			this.codecomp(OP_EQ, 1, e1, e2);

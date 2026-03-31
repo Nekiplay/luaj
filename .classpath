@@ -9,11 +9,42 @@
 	<classpathentry kind="src" path="examples/jse"/>
 	<classpathentry kind="src" path="examples/jme"/>
 	<classpathentry kind="src" path="examples/lua"/>
-	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER"/>
+	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER/org.eclipse.jdt.internal.debug.ui.launcher.StandardVMType/JavaSE-1.8">
+		<attributes>
+			<attribute name="maven.pomderived" value="true"/>
+		</attributes>
+	</classpathentry>
 	<classpathentry kind="con" path="org.eclipse.jdt.junit.JUNIT_CONTAINER/3"/>
 	<classpathentry kind="lib" path="lib/midpapi20.jar"/>
 	<classpathentry kind="lib" path="lib/cldcapi11.jar"/>
 	<classpathentry kind="lib" path="lib/bcel-5.2.jar"/>
 	<classpathentry kind="var" path="JRE_LIB"/>
-	<classpathentry kind="output" path="bin"/>
+	<classpathentry including="core/**/*.java|jse/org/luaj/vm2/lib/**/*.java|jse/org/luaj/vm2/ast/**/*.java|jse/org/luaj/vm2/parser/**/*.java|jse/org/luaj/vm2/script/**/*.java|jse/org/luaj/vm2/server/**/*.java|jse/org/luaj/vm2/luajc/**/*.java|**/*.java" kind="src" output="target/classes" path="src">
+		<attributes>
+			<attribute name="optional" value="true"/>
+			<attribute name="maven.pomderived" value="true"/>
+		</attributes>
+	</classpathentry>
+	<classpathentry kind="con" path="org.eclipse.m2e.MAVEN2_CLASSPATH_CONTAINER">
+		<attributes>
+			<attribute name="maven.pomderived" value="true"/>
+		</attributes>
+	</classpathentry>
+	<classpathentry kind="src" path="target/generated-sources/annotations">
+		<attributes>
+			<attribute name="optional" value="true"/>
+			<attribute name="maven.pomderived" value="true"/>
+			<attribute name="ignore_optional_problems" value="true"/>
+			<attribute name="m2e-apt" value="true"/>
+		</attributes>
+	</classpathentry>
+	<classpathentry kind="src" output="target/test-classes" path="target/generated-test-sources/test-annotations">
+		<attributes>
+			<attribute name="optional" value="true"/>
+			<attribute name="maven.pomderived" value="true"/>
+			<attribute name="ignore_optional_problems" value="true"/>
+			<attribute name="m2e-apt" value="true"/>
+		</attributes>
+	</classpathentry>
+	<classpathentry kind="output" path="target/classes"/>
 </classpath>

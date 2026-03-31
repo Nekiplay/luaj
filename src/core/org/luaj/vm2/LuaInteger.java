@@ -171,6 +171,23 @@ public class LuaInteger extends LuaNumber {
 	public LuaValue   mod( int rhs )        { return LuaDouble.dmod(v,rhs); }
 	public LuaValue   modFrom( double lhs )   { return LuaDouble.dmod(lhs,v); }
 	
+	public LuaValue   shl( LuaValue rhs )        { return rhs.shl(v); }
+	public LuaValue   shl( int rhs )        { return valueOf(v << rhs); }
+	public LuaValue   shl( double rhs )        { return LuaDouble.valueOf(v << (int)rhs); }
+	public LuaValue   shr( LuaValue rhs )        { return rhs.shr(v); }
+	public LuaValue   shr( int rhs )        { return valueOf(v >> rhs); }
+	public LuaValue   shr( double rhs )        { return LuaDouble.valueOf(v >> (int)rhs); }
+	public LuaValue   band( LuaValue rhs )        { return rhs.band(v); }
+	public LuaValue   band( int rhs )        { return valueOf(v & rhs); }
+	public LuaValue   band( double rhs )        { return LuaDouble.valueOf(v & (int)rhs); }
+	public LuaValue   bor( LuaValue rhs )        { return rhs.bor(v); }
+	public LuaValue   bor( int rhs )        { return valueOf(v | rhs); }
+	public LuaValue   bor( double rhs )        { return LuaDouble.valueOf(v | (int)rhs); }
+	public LuaValue   bxor( LuaValue rhs )        { return rhs.bxor(v); }
+	public LuaValue   bxor( int rhs )        { return valueOf(v ^ rhs); }
+	public LuaValue   bxor( double rhs )        { return LuaDouble.valueOf(v ^ (int)rhs); }
+	public LuaValue   bnot()                     { return valueOf(~v); }
+	
 	// relational operators
 	public LuaValue   lt( LuaValue rhs )         { return rhs instanceof LuaNumber ? (rhs.gt_b(v)? TRUE: FALSE) : super.lt(rhs); }
 	public LuaValue   lt( double rhs )      { return v < rhs? TRUE: FALSE; }

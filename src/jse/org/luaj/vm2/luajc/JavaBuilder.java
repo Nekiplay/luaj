@@ -522,6 +522,7 @@ public class JavaBuilder {
 			case Lua.OP_UNM: op = "neg"; break;
 			case Lua.OP_NOT: op = "not"; break;
 			case Lua.OP_LEN: op = "len"; break;
+			case Lua.OP_BNOT: op = "bnot"; break;
 		}
         append(factory.createInvoke(STR_LUAVALUE, op, TYPE_LUAVALUE, Type.NO_ARGS, Constants.INVOKEVIRTUAL));
 	}
@@ -536,10 +537,15 @@ public class JavaBuilder {
 			case Lua.OP_DIV: op = "div"; break;
 			case Lua.OP_MOD: op = "mod"; break;
 			case Lua.OP_POW: op = "pow"; break;
+			case Lua.OP_SHL: op = "shl"; break;
+			case Lua.OP_SHR: op = "shr"; break;
+			case Lua.OP_BAND: op = "band"; break;
+			case Lua.OP_BOR: op = "bor"; break;
+			case Lua.OP_BXOR: op = "bxor"; break;
 		}
         append(factory.createInvoke(STR_LUAVALUE, op, TYPE_LUAVALUE, ARG_TYPES_LUAVALUE, Constants.INVOKEVIRTUAL));
 	}
-
+	
 	public void compareop(int o) {
 		String op;
 		switch (o) {
@@ -550,7 +556,7 @@ public class JavaBuilder {
 		}
         append(factory.createInvoke(STR_LUAVALUE, op, Type.BOOLEAN, ARG_TYPES_LUAVALUE, Constants.INVOKEVIRTUAL));
 	}
-
+	
 	public void areturn() {
 		append(InstructionConstants.ARETURN);
 	}

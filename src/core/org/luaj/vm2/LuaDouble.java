@@ -147,6 +147,23 @@ public class LuaDouble extends LuaNumber {
 	public LuaValue   mod( int rhs )        { return LuaDouble.dmod(v,rhs); }
 	public LuaValue   modFrom( double lhs )   { return LuaDouble.dmod(lhs,v); }
 	
+	public LuaValue   shl( LuaValue rhs )        { return rhs.shl((int)v); }
+	public LuaValue   shl( int rhs )        { return LuaInteger.valueOf(((int)v) << rhs); }
+	public LuaValue   shl( double rhs )        { return LuaInteger.valueOf(((int)v) << (int)rhs); }
+	public LuaValue   shr( LuaValue rhs )        { return rhs.shr((int)v); }
+	public LuaValue   shr( int rhs )        { return LuaInteger.valueOf(((int)v) >> rhs); }
+	public LuaValue   shr( double rhs )        { return LuaInteger.valueOf(((int)v) >> (int)rhs); }
+	public LuaValue   band( LuaValue rhs )        { return rhs.band((int)v); }
+	public LuaValue   band( int rhs )        { return LuaInteger.valueOf(((int)v) & rhs); }
+	public LuaValue   band( double rhs )        { return LuaInteger.valueOf(((int)v) & (int)rhs); }
+	public LuaValue   bor( LuaValue rhs )        { return rhs.bor((int)v); }
+	public LuaValue   bor( int rhs )        { return LuaInteger.valueOf(((int)v) | rhs); }
+	public LuaValue   bor( double rhs )        { return LuaInteger.valueOf(((int)v) | (int)rhs); }
+	public LuaValue   bxor( LuaValue rhs )        { return rhs.bxor((int)v); }
+	public LuaValue   bxor( int rhs )        { return LuaInteger.valueOf(((int)v) ^ rhs); }
+	public LuaValue   bxor( double rhs )        { return LuaInteger.valueOf(((int)v) ^ (int)rhs); }
+	public LuaValue   bnot()                     { return LuaInteger.valueOf(~((int)v)); }
+	
 	
 	/** Divide two double numbers according to lua math, and return a {@link LuaValue} result.
 	 * @param lhs Left-hand-side of the division.

@@ -243,6 +243,24 @@ public class LuaValue extends Varargs {
 	/** LuaString constant with value "__concat" for use as metatag */
 	public static final LuaString CONCAT      = valueOf("__concat");
 	
+	/** LuaString constant with value "__shl" for use as metatag */
+	public static final LuaString SHL         = valueOf("__shl");
+	
+	/** LuaString constant with value "__shr" for use as metatag */
+	public static final LuaString SHR         = valueOf("__shr");
+	
+	/** LuaString constant with value "__band" for use as metatag */
+	public static final LuaString BAND        = valueOf("__band");
+	
+	/** LuaString constant with value "__bor" for use as metatag */
+	public static final LuaString BOR         = valueOf("__bor");
+	
+	/** LuaString constant with value "__bxor" for use as metatag */
+	public static final LuaString BXOR        = valueOf("__bxor");
+	
+	/** LuaString constant with value "__bnot" for use as metatag */
+	public static final LuaString BNOT        = valueOf("__bnot");
+	
 	/** LuaString constant with value "" */
 	public static final LuaString EMPTYSTRING = valueOf("");
 
@@ -2504,6 +2522,98 @@ public class LuaValue extends Varargs {
 	 * @see #mod(int)
 	 */
 	public LuaValue   modFrom(double lhs)     { return arithmtwith(MOD,lhs); }
+	
+	/** Shift left: Perform bitwise left shift operation with another value
+	 * of unknown type, including metatag processing.
+	 * <p>
+	 * Each operand must derive from {@link LuaNumber}
+	 * or derive from {@link LuaString} and be convertible to a number
+	 * 
+	 * @param rhs The right-hand-side value to perform the shift with
+	 * @return  value of {@code (this << rhs)} if both are numeric,
+	 * or {@link LuaValue} if metatag processing occurs
+	 * @throws LuaError if either operand is not a number or string convertible to number,
+	 * and neither has the {@link #ADD} metatag defined
+	 */
+	public LuaValue   shl( LuaValue rhs )        { return arithmt(SHL,rhs); }
+	public LuaValue   shl( int rhs )            { return arithmt(SHL, valueOf(rhs)); }
+	public LuaValue   shl( double rhs )         { return arithmt(SHL, valueOf(rhs)); }
+	
+	/** Shift right: Perform bitwise right shift operation with another value
+	 * of unknown type, including metatag processing.
+	 * <p>
+	 * Each operand must derive from {@link LuaNumber}
+	 * or derive from {@link LuaString} and be convertible to a number
+	 * 
+	 * @param rhs The right-hand-side value to perform the shift with
+	 * @return  value of {@code (this >> rhs)} if both are numeric,
+	 * or {@link LuaValue} if metatag processing occurs
+	 * @throws LuaError if either operand is not a number or string convertible to number,
+	 * and neither has the {@link #ADD} metatag defined
+	 */
+	public LuaValue   shr( LuaValue rhs )        { return arithmt(SHR,rhs); }
+	public LuaValue   shr( int rhs )            { return arithmt(SHR, valueOf(rhs)); }
+	public LuaValue   shr( double rhs )         { return arithmt(SHR, valueOf(rhs)); }
+	
+	/** Bitwise and: Perform bitwise AND operation with another value
+	 * of unknown type, including metatag processing.
+	 * <p>
+	 * Each operand must derive from {@link LuaNumber}
+	 * or derive from {@link LuaString} and be convertible to a number
+	 * 
+	 * @param rhs The right-hand-side value to perform the AND with
+	 * @return  value of {@code (this & rhs)} if both are numeric,
+	 * or {@link LuaValue} if metatag processing occurs
+	 * @throws LuaError if either operand is not a number or string convertible to number,
+	 * and neither has the {@link #ADD} metatag defined
+	 */
+	public LuaValue   band( LuaValue rhs )        { return arithmt(BAND,rhs); }
+	public LuaValue   band( int rhs )            { return arithmt(BAND, valueOf(rhs)); }
+	public LuaValue   band( double rhs )         { return arithmt(BAND, valueOf(rhs)); }
+	
+	/** Bitwise or: Perform bitwise OR operation with another value
+	 * of unknown type, including metatag processing.
+	 * <p>
+	 * Each operand must derive from {@link LuaNumber}
+	 * or derive from {@link LuaString} and be convertible to a number
+	 * 
+	 * @param rhs The right-hand-side value to perform the OR with
+	 * @return  value of {@code (this | rhs)} if both are numeric,
+	 * or {@link LuaValue} if metatag processing occurs
+	 * @throws LuaError if either operand is not a number or string convertible to number,
+	 * and neither has the {@link #ADD} metatag defined
+	 */
+	public LuaValue   bor( LuaValue rhs )        { return arithmt(BOR,rhs); }
+	public LuaValue   bor( int rhs )            { return arithmt(BOR, valueOf(rhs)); }
+	public LuaValue   bor( double rhs )         { return arithmt(BOR, valueOf(rhs)); }
+	
+	/** Bitwise xor: Perform bitwise XOR operation with another value
+	 * of unknown type, including metatag processing.
+	 * <p>
+	 * Each operand must derive from {@link LuaNumber}
+	 * or derive from {@link LuaString} and be convertible to a number
+	 * 
+	 * @param rhs The right-hand-side value to perform the XOR with
+	 * @return  value of {@code (this ~ rhs)} if both are numeric,
+	 * or {@link LuaValue} if metatag processing occurs
+	 * @throws LuaError if either operand is not a number or string convertible to number,
+	 * and neither has the {@link #ADD} metatag defined
+	 */
+	public LuaValue   bxor( LuaValue rhs )        { return arithmt(BXOR,rhs); }
+	public LuaValue   bxor( int rhs )            { return arithmt(BXOR, valueOf(rhs)); }
+	public LuaValue   bxor( double rhs )         { return arithmt(BXOR, valueOf(rhs)); }
+	
+	/** Bitwise not: Perform bitwise NOT operation
+	 * including metatag processing.
+	 * <p>
+	 * {@code this} must derive from {@link LuaNumber}
+	 * or derive from {@link LuaString} and be convertible to a number
+	 * 
+	 * @return  value of {@code (~this)} if this is numeric,
+	 * or {@link LuaValue} if metatag processing occurs
+	 * @throws LuaError if this is not a number or string convertible to number
+	 */
+	public LuaValue   bnot()                     { return checkmetatag(BNOT, "attempt to perform arithmetic on ").call(this);  }
 	
 	/** Perform metatag processing for arithmetic operations.
 	 * <p>

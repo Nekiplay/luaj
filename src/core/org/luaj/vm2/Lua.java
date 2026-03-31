@@ -234,7 +234,14 @@ public class Lua {
 
 	public static final int OP_EXTRAARG = 39; /* Ax	extra (larger) argument for previous opcode	*/
 
-	public static final int NUM_OPCODES	= OP_EXTRAARG + 1;
+	public static final int OP_SHL = 40; /*	A B C	R(A) := RK(B) << RK(C)				*/
+	public static final int OP_SHR = 41; /*	A B C	R(A) := RK(B) >> RK(C)				*/
+	public static final int OP_BAND = 42; /*	A B C	R(A) := RK(B) & RK(C)				*/
+	public static final int OP_BOR = 43; /*	A B C	R(A) := RK(B) | RK(C)				*/
+	public static final int OP_BXOR = 44; /*	A B C	R(A) := RK(B) ~ RK(C)				*/
+	public static final int OP_BNOT = 45; /*	A B	R(A) := ~R(B)					*/
+
+	public static final int NUM_OPCODES	= OP_BNOT + 1;
 
 	/* pseudo-opcodes used in parsing only.  */
 	public static final int OP_GT  = 63; // >
@@ -320,6 +327,12 @@ public class Lua {
 		 (0<<7) | (1<<6) | (OpArgU<<4) | (OpArgN<<2) | (iABx),		/* OP_CLOSURE */
 		 (0<<7) | (1<<6) | (OpArgU<<4) | (OpArgN<<2) | (iABC),		/* OP_VARARG */
 		 (0<<7) | (0<<6) | (OpArgU<<4) | (OpArgU<<2) | (iAx),		/* OP_EXTRAARG */
+		 (0<<7) | (1<<6) | (OpArgK<<4) | (OpArgK<<2) | (iABC),		/* OP_SHL */
+		 (0<<7) | (1<<6) | (OpArgK<<4) | (OpArgK<<2) | (iABC),		/* OP_SHR */
+		 (0<<7) | (1<<6) | (OpArgK<<4) | (OpArgK<<2) | (iABC),		/* OP_BAND */
+		 (0<<7) | (1<<6) | (OpArgK<<4) | (OpArgK<<2) | (iABC),		/* OP_BOR */
+		 (0<<7) | (1<<6) | (OpArgK<<4) | (OpArgK<<2) | (iABC),		/* OP_BXOR */
+		 (0<<7) | (1<<6) | (OpArgR<<4) | (OpArgN<<2) | (iABC),		/* OP_BNOT */
 	  };
 
 	public static int getOpMode(int m) {

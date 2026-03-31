@@ -90,10 +90,12 @@ public class LexState extends Constants {
 	  OPR_NE=7, OPR_EQ=8,
 	  OPR_LT=9, OPR_LE=10, OPR_GT=11, OPR_GE=12,
 	  OPR_AND=13, OPR_OR=14,
-	  OPR_NOBINOPR=15;
+	  OPR_SHL=15, OPR_SHR=16,
+	  OPR_BAND=17, OPR_BOR=18, OPR_BXOR=19,
+	  OPR_NOBINOPR=20;
 
 	static final int
-		OPR_MINUS=0, OPR_NOT=1, OPR_LEN=2, OPR_NOUNOPR=3;
+		OPR_MINUS=0, OPR_NOT=1, OPR_LEN=2, OPR_BNOT=3, OPR_NOUNOPR=4;
 
 	/* exp kind */
 	static final int
@@ -150,6 +152,7 @@ public class LexState extends Constants {
 	    "in", "local", "nil", "not", "or", "repeat",
 	    "return", "then", "true", "until", "while",
 	    "..", "...", "==", ">=", "<=", "~=",
+	    "<<", ">>", "&", "|", "~",
 	    "::", "<eos>", "<number>", "<name>", "<string>", "<eof>",
 	};
 
@@ -161,7 +164,9 @@ public class LexState extends Constants {
 		TK_RETURN=274, TK_THEN=275, TK_TRUE=276, TK_UNTIL=277, TK_WHILE=278,
 		/* other terminal symbols */
 		TK_CONCAT=279, TK_DOTS=280, TK_EQ=281, TK_GE=282, TK_LE=283, TK_NE=284,
-		TK_DBCOLON=285, TK_EOS=286, TK_NUMBER=287, TK_NAME=288, TK_STRING=289;
+		TK_SHL=285, TK_SHR=286,
+		TK_BAND=287, TK_BOR=288, TK_BXOR=289, TK_BNOT=290,
+		TK_DBCOLON=291, TK_EOS=292, TK_NUMBER=293, TK_NAME=294, TK_STRING=295;
 	  
 	final static int FIRST_RESERVED = TK_AND;
 	final static int NUM_RESERVED = TK_WHILE+1-FIRST_RESERVED;
@@ -637,30 +642,44 @@ public class LexState extends Constants {
 			}
 			case '<': {
 				nextChar();
-				if (current != '=')
-					return '<';
-				else {
+				if (current == '<') {
+					nextChar();
+					return TK_SHL;
+				} else if (current == '=') {
 					nextChar();
 					return TK_LE;
+				} else {
+					return '<';
 				}
 			}
 			case '>': {
 				nextChar();
-				if (current != '=')
-					return '>';
-				else {
+				if (current == '>') {
+					nextChar();
+					return TK_SHR;
+				} else if (current == '=') {
 					nextChar();
 					return TK_GE;
+				} else {
+					return '>';
 				}
 			}
 			case '~': {
 				nextChar();
-				if (current != '=')
-					return '~';
-				else {
+				if (current == '=') {
 					nextChar();
 					return TK_NE;
+				} else {
+					return '~';
 				}
+			}
+			case '&': {
+				nextChar();
+				return TK_BAND;
+			}
+			case '|': {
+				nextChar();
+				return TK_BOR;
 			}
 			case ':': {
 				nextChar();
@@ -1498,6 +1517,10 @@ public class LexState extends Constants {
 			return OPR_MINUS;
 		case '#':
 			return OPR_LEN;
+		case '~':
+			return OPR_BNOT;
+		case TK_BNOT:
+			return OPR_BNOT;
 		default:
 			return OPR_NOUNOPR;
 		}
@@ -1536,6 +1559,18 @@ public class LexState extends Constants {
 			return OPR_AND;
 		case TK_OR:
 			return OPR_OR;
+		case TK_SHL:
+			return OPR_SHL;
+		case TK_SHR:
+			return OPR_SHR;
+		case TK_BAND:
+			return OPR_BAND;
+		case TK_BOR:
+			return OPR_BOR;
+		case TK_BXOR:
+			return OPR_BXOR;
+		case '~':
+			return OPR_BXOR;
 		default:
 			return OPR_NOBINOPR;
 		}
@@ -1557,7 +1592,9 @@ public class LexState extends Constants {
 	   new Priority(10, 9), new Priority(5, 4),                 /* power and concat (right associative) */
 	   new Priority(3, 3), new Priority(3, 3),                  /* equality and inequality */
 	   new Priority(3, 3), new Priority(3, 3), new Priority(3, 3), new Priority(3, 3),  /* order */
-	   new Priority(2, 2), new Priority(1, 1)                   /* logical (and/or) */
+	   new Priority(2, 2), new Priority(1, 1),                  /* logical (and/or) */
+	   new Priority(7, 7), new Priority(7, 7),                  /* shift (shl/shr) */
+	   new Priority(7, 7), new Priority(7, 7), new Priority(7, 7)  /* bitwise (band/bor/bxor) */
 	};
 
 	static final int UNARY_PRIORITY	= 8;  /* priority for unary operators */

@@ -277,6 +277,11 @@ public class Print extends Lua {
 			case OP_MUL:
 			case OP_DIV:
 			case OP_POW:
+			case OP_SHL:
+			case OP_SHR:
+			case OP_BAND:
+			case OP_BOR:
+			case OP_BXOR:
 			case OP_EQ:
 			case OP_LT:
 			case OP_LE:

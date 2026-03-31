@@ -167,9 +167,20 @@ public class JavaGen {
 				case Lua.OP_DIV: /*	A B C	R(A):= RK(B) / RK(C)				*/
 				case Lua.OP_MOD: /*	A B C	R(A):= RK(B) % RK(C)				*/
 				case Lua.OP_POW: /*	A B C	R(A):= RK(B) ^ RK(C)				*/
+				case Lua.OP_SHL: /*	A B C	R(A):= RK(B) << RK(C)				*/
+				case Lua.OP_SHR: /*	A B C	R(A):= RK(B) >> RK(C)				*/
+				case Lua.OP_BAND: /*	A B C	R(A):= RK(B) & RK(C)				*/
+				case Lua.OP_BOR: /*	A B C	R(A):= RK(B) | RK(C)				*/
+				case Lua.OP_BXOR: /*	A B C	R(A):= RK(B) ~ RK(C)				*/
 					loadLocalOrConstant( p, builder, pc, b );
 					loadLocalOrConstant( p, builder, pc, c );
 					builder.binaryop( o );
+					builder.storeLocal( pc, a );
+					break;
+					
+				case Lua.OP_BNOT: /*	A B	R(A):= ~R(B)					*/
+					loadLocalOrConstant( p, builder, pc, b );
+					builder.unaryop( o );
 					builder.storeLocal( pc, a );
 					break;
 					

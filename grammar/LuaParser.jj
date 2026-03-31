@@ -505,27 +505,33 @@ void FieldSep():
 int Binop():
 {}
 {
-	"+"   { return Lua.OP_ADD; }
-|	"-"   { return Lua.OP_SUB; } 
-|	"*"   { return Lua.OP_MUL; } 
-|	"/"   { return Lua.OP_DIV; } 
-|	"^"   { return Lua.OP_POW; } 
-|	"%"   { return Lua.OP_MOD; } 
-|	".."  { return Lua.OP_CONCAT; } 
-|	"<"   { return Lua.OP_LT;  } 
-|	"<="  { return Lua.OP_LE;  } 
-|	">"   { return Lua.OP_GT;  } 
-|	">="  { return Lua.OP_GE;  }
-|	"=="  { return Lua.OP_EQ;  } 
-|	"~="  { return Lua.OP_NEQ; } 
-|	<AND> { return Lua.OP_AND; } 
-|	<OR>  { return Lua.OP_OR;  }
+  	"+"   { return Lua.OP_ADD; }
+  |	"-"   { return Lua.OP_SUB; } 
+  |	"*"   { return Lua.OP_MUL; } 
+  |	"/"   { return Lua.OP_DIV; } 
+  |	"^"   { return Lua.OP_POW; } 
+  |	"%"   { return Lua.OP_MOD; } 
+  |	"<<"  { return Lua.OP_SHL; }
+  |	">>"  { return Lua.OP_SHR; }
+  |	"&"   { return Lua.OP_BAND; }
+  |	"~"   { return Lua.OP_BXOR; }
+  |	"|"   { return Lua.OP_BOR; }
+  |	".."  { return Lua.OP_CONCAT; } 
+  |	"<"   { return Lua.OP_LT;  } 
+  |	"<="  { return Lua.OP_LE;  } 
+  |	">"   { return Lua.OP_GT;  } 
+  |	">="  { return Lua.OP_GE;  }
+  |	"=="  { return Lua.OP_EQ;  } 
+  |	"~="  { return Lua.OP_NEQ; } 
+  |	<AND> { return Lua.OP_AND; } 
+  |	<OR>  { return Lua.OP_OR;  }
 }
 
 int Unop():
 {}
 {
-	"-"   { return Lua.OP_UNM; }
-|	<NOT> { return Lua.OP_NOT; } 
-|	"#"   { return Lua.OP_LEN; }
+ 	"-"   { return Lua.OP_UNM; }
+ |	<NOT> { return Lua.OP_NOT; } 
+ |	"#"   { return Lua.OP_LEN; }
+ |	"~"   { return Lua.OP_BNOT; }
 }
