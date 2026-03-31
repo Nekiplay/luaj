@@ -142,10 +142,6 @@ public class LuaDouble extends LuaNumber {
 	public LuaValue   div( double rhs )        { return LuaDouble.ddiv(v,rhs); }
 	public LuaValue   div( int rhs )        { return LuaDouble.ddiv(v,rhs); }
 	public LuaValue   divInto( double lhs )   { return LuaDouble.ddiv(lhs,v); }
-	public LuaValue   idiv( LuaValue rhs )        { return rhs.idivFrom(v); }
-	public LuaValue   idiv( double rhs )        { return LuaDouble.didiv(v,rhs); }
-	public LuaValue   idiv( int rhs )        { return LuaDouble.didiv(v,rhs); }
-	public LuaValue   idivFrom( double lhs )   { return LuaDouble.didiv(lhs,v); }
 	public LuaValue   mod( LuaValue rhs )        { return rhs.modFrom(v); }
 	public LuaValue   mod( double rhs )        { return LuaDouble.dmod(v,rhs); }
 	public LuaValue   mod( int rhs )        { return LuaDouble.dmod(v,rhs); }
@@ -193,11 +189,6 @@ public class LuaDouble extends LuaNumber {
 	 */
 	public static double ddiv_d(double lhs, double rhs) {
 		return rhs!=0? lhs / rhs: lhs>0? Double.POSITIVE_INFINITY: lhs==0? Double.NaN: Double.NEGATIVE_INFINITY;
-	}
-	
-	public static LuaValue didiv(double lhs, double rhs) {
-		if (rhs == 0) throw new LuaError("attempt to divide by zero");
-		return valueOf((long)Math.floor(lhs / rhs));
 	}
 	
 	/** Take modulo double numbers according to lua math, and return a {@link LuaValue} result.

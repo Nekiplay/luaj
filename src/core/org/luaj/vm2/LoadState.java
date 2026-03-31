@@ -99,9 +99,6 @@ public class LoadState {
 	/** format corresponding to number-patched lua, all numbers are 32-bit (4 byte) ints */
 	public static final int NUMBER_FORMAT_NUM_PATCH_INT32      = 4;
 	
-	/** format for Lua 5.3 with separate int/float types */
-	public static final int NUMBER_FORMAT_LUA53                = 5;
-	
 	// type constants
 	public static final int LUA_TINT            = (-2);
 	public static final int LUA_TNONE			= (-1);
@@ -116,34 +113,21 @@ public class LoadState {
 	public static final int LUA_TTHREAD			= 8;
 	public static final int LUA_TVALUE          = 9;
 	
-	/** Lua 5.3 constant type codes */
-	public static final int LUA_TNUMFLT         = 0x03;
-	public static final int LUA_TNUMINT         = 0x13;
-	
 	/** The character encoding to use for file encoding.  Null means the default encoding */
 	public static String encoding = null;
 	
 	/** Signature byte indicating the file is a compiled binary chunk */
 	public static final byte[] LUA_SIGNATURE	= { '\033', 'L', 'u', 'a' };
 
-	/** Data to catch conversion errors - Lua 5.2 tail */
+	/** Data to catch conversion errors */
 	public static final byte[] LUAC_TAIL = { (byte) 0x19, (byte) 0x93, '\r', '\n', (byte) 0x1a, '\n', };
 	
-	/** LUAC_DATA for Lua 5.3 */
-	public static final byte[] LUAC_DATA = { (byte) 0x19, (byte) 0x93, '\r', '\n', (byte) 0x1a, '\n' };
-
 
 	/** Name for compiled chunks */
 	public static final String SOURCE_BINARY_STRING = "binary string";
 
 
 	/** for header of binary files -- this is Lua 5.2 */
-	public static final int LUAC_VERSION_52		= 0x52;
-	
-	/** for header of binary files -- this is Lua 5.3 */
-	public static final int LUAC_VERSION_53		= 0x53;
-	
-	/** for header of binary files -- this is Lua 5.2 (backward compat) */
 	public static final int LUAC_VERSION		= 0x52;
 
 	/** for header of binary files -- this is the official format */
@@ -160,7 +144,6 @@ public class LoadState {
 	private int     luacSizeofSizeT;
 	private int     luacSizeofInstruction;
 	private int     luacSizeofLuaNumber;
-	private int     luacSizeofLuaInteger;
 	private int 	luacNumberFormat;
 
 	/** input stream from which we are loading */
@@ -289,26 +272,24 @@ public class LoadState {
 		int n = loadInt();
 		LuaValue[] values = n>0? new LuaValue[n]: NOVALUES;
 		for ( int i=0; i<n; i++ ) {
-			int type = is.readByte() & 0xFF;
-			switch ( type ) {
-			case 0:
+			switch ( is.readByte() ) {
+			case LUA_TNIL:
 				values[i] = LuaValue.NIL;
 				break;
-			case 1:
+			case LUA_TBOOLEAN:
 				values[i] = (0 != is.readUnsignedByte()? LuaValue.TRUE: LuaValue.FALSE);
 				break;
-			case 0x13:
-				values[i] = LuaLong.valueOf(loadInt64());
+			case LUA_TINT:
+				values[i] = LuaInteger.valueOf( loadInt() );
 				break;
-			case 3:
+			case LUA_TNUMBER:
 				values[i] = loadNumber();
 				break;
-			case 4:
-			case 0x14:
+			case LUA_TSTRING:
 				values[i] = loadString();
 				break;
 			default:
-				throw new IllegalStateException("bad constant: " + type);
+				throw new IllegalStateException("bad constant");
 			}
 		}
 		f.k = values;
@@ -390,31 +371,15 @@ public class LoadState {
 	public void loadHeader() throws IOException {
 		luacVersion = is.readByte();
 		luacFormat = is.readByte();
-		if (luacVersion >= 0x53) {
-			for (int i=0; i < LUAC_DATA.length; ++i)
-				if (is.readByte() != LUAC_DATA[i])
-					throw new LuaError("Unexpected byte in luac data of header, index="+i);
-			luacLittleEndian = true;
-			luacSizeofInt = is.readByte();
-			luacSizeofSizeT = is.readByte();
-			luacSizeofInstruction = is.readByte();
-			luacSizeofLuaInteger = is.readByte();
-			luacSizeofLuaNumber = is.readByte();
-			luacNumberFormat = 5;
-			is.readFully(buf, 0, 8);
-			is.readFully(buf, 0, 8);
-		} else {
-			luacLittleEndian = (0 != is.readByte());
-			luacSizeofInt = is.readByte();
-			luacSizeofSizeT = is.readByte();
-			luacSizeofInstruction = is.readByte();
-			luacSizeofLuaNumber = is.readByte();
-			luacSizeofLuaInteger = 4;
-			luacNumberFormat = is.readByte();
-			for (int i=0; i < LUAC_TAIL.length; ++i)
-				if (is.readByte() != LUAC_TAIL[i])
-					throw new LuaError("Unexpected byte in luac tail of header, index="+i);
-		}
+		luacLittleEndian = (0 != is.readByte());
+		luacSizeofInt = is.readByte();
+		luacSizeofSizeT = is.readByte();
+		luacSizeofInstruction = is.readByte();
+		luacSizeofLuaNumber = is.readByte();
+		luacNumberFormat = is.readByte();
+		for (int i=0; i < LUAC_TAIL.length; ++i)
+			if (is.readByte() != LUAC_TAIL[i])
+				throw new LuaError("Unexpeted byte in luac tail of header, index="+i);
 	}
 
 	/**
@@ -442,17 +407,10 @@ public class LoadState {
 		case NUMBER_FORMAT_FLOATS_OR_DOUBLES:
 		case NUMBER_FORMAT_INTS_ONLY:
 		case NUMBER_FORMAT_NUM_PATCH_INT32:
-		case NUMBER_FORMAT_LUA53:
 			break;
 		default:
 			throw new LuaError("unsupported int size");
 		}
-		
-		// In Lua 5.3, a single upvalue count byte follows the header
-		if (s.luacVersion >= 0x53) {
-			s.is.readByte();
-		}
-		
 		return s.loadFunction( LuaString.valueOf(sname) );
 	}
 	

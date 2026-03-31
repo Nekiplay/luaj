@@ -213,9 +213,6 @@ public class LuaValue extends Varargs {
 	/** LuaString constant with value "__div" for use as metatag */
 	public static final LuaString DIV         = valueOf("__div");
 
-	/** LuaString constant with value "__idiv" for use as metatag */
-	public static final LuaString IDIV         = valueOf("__idiv");
-
 	/** LuaString constant with value "__mul" for use as metatag */
 	public static final LuaString MUL         = valueOf("__mul");
 
@@ -2486,14 +2483,6 @@ public class LuaValue extends Varargs {
 	 * @see #div(int)
 	 */
 	public LuaValue   divInto(double lhs)     { return arithmtwith(DIV,lhs); }
-	
-	public LuaValue   idiv( LuaValue rhs )        { return arithmt(IDIV,rhs); }
-	
-	public LuaValue   idiv( double rhs )        { return aritherror("idiv"); }
-	
-	public LuaValue   idiv( int rhs )        { return aritherror("idiv"); }
-	
-	public LuaValue   idivFrom( double rhs )   { return aritherror("idiv"); }
 	
 	/** Modulo: Perform numeric modulo operation with another value
 	 * of unknown type,

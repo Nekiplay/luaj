@@ -870,7 +870,7 @@ public class FuncState extends Constants {
 		LuaValue v1, v2, r;
 		if (!e1.isnumeral() || !e2.isnumeral())
 			return false;
-		if ((op == OP_DIV || op == OP_MOD || op == OP_IDIV) && e2.u.nval().eq_b(LuaValue.ZERO))
+		if ((op == OP_DIV || op == OP_MOD) && e2.u.nval().eq_b(LuaValue.ZERO))
 			    return false;  /* do not attempt to divide by 0 */
 		v1 = e1.u.nval();
 		v2 = e2.u.nval();
@@ -886,9 +886,6 @@ public class FuncState extends Constants {
 			break;
 		case OP_DIV:
 			r = v1.div(v2);
-			break;
-		case OP_IDIV:
-			r = v1.idiv(v2);
 			break;
 		case OP_MOD:
 			r = v1.mod(v2);
@@ -1018,7 +1015,6 @@ public class FuncState extends Constants {
 		case LexState.OPR_SUB:
 		case LexState.OPR_MUL:
 		case LexState.OPR_DIV:
-		case LexState.OPR_IDIV:
 		case LexState.OPR_MOD:
 		case LexState.OPR_POW:
 		case LexState.OPR_SHL:
@@ -1082,9 +1078,6 @@ public class FuncState extends Constants {
 			break;
 		case LexState.OPR_DIV:
 			this.codearith(OP_DIV, e1, e2, line);
-			break;
-		case LexState.OPR_IDIV:
-			this.codearith(OP_IDIV, e1, e2, line);
 			break;
 		case LexState.OPR_MOD:
 			this.codearith(OP_MOD, e1, e2, line);

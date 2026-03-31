@@ -53,17 +53,10 @@ public class Print extends Lua {
 		  "ADD",
 		  "SUB",
 		  "MUL",
+		  "DIV",
 		  "MOD",
 		  "POW",
-		  "DIV",
-		  "IDIV",
-		  "BAND",
-		  "BOR",
-		  "BXOR",
-		  "SHL",
-		  "SHR",
 		  "UNM",
-		  "BNOT",
 		  "NOT",
 		  "LEN",
 		  "CONCAT",
@@ -84,6 +77,7 @@ public class Print extends Lua {
 		  "CLOSURE",
 		  "VARARG",
 		  "EXTRAARG",
+		  null,
 	};
 
 
@@ -281,15 +275,13 @@ public class Print extends Lua {
 			case OP_ADD:
 			case OP_SUB:
 			case OP_MUL:
-			case OP_MOD:
-			case OP_POW:
 			case OP_DIV:
-			case OP_IDIV:
+			case OP_POW:
+			case OP_SHL:
+			case OP_SHR:
 			case OP_BAND:
 			case OP_BOR:
 			case OP_BXOR:
-			case OP_SHL:
-			case OP_SHR:
 			case OP_EQ:
 			case OP_LT:
 			case OP_LE:
