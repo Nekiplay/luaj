@@ -199,49 +199,49 @@ public class Lua {
 	public static final int OP_ADD = 13; /*	A B C	R(A) := RK(B) + RK(C)				*/
 	public static final int OP_SUB = 14; /*	A B C	R(A) := RK(B) - RK(C)				*/
 	public static final int OP_MUL = 15; /*	A B C	R(A) := RK(B) * RK(C)				*/
-	public static final int OP_DIV = 16; /*	A B C	R(A) := RK(B) / RK(C)				*/
-	public static final int OP_MOD = 17; /*	A B C	R(A) := RK(B) % RK(C)				*/
-	public static final int OP_POW = 18; /*	A B C	R(A) := RK(B) ^ RK(C)				*/
-	public static final int OP_UNM = 19; /*	A B	R(A) := -R(B)					*/
-	public static final int OP_NOT = 20; /*	A B	R(A) := not R(B)				*/
-	public static final int OP_LEN = 21; /*	A B	R(A) := length of R(B)				*/
+	public static final int OP_MOD = 16; /*	A B C	R(A) := RK(B) % RK(C)				*/
+	public static final int OP_POW = 17; /*	A B C	R(A) := RK(B) ^ RK(C)				*/
+	public static final int OP_DIV = 18; /*	A B C	R(A) := RK(B) / RK(C)				*/
+	public static final int OP_IDIV = 19; /*	A B C	R(A) := RK(B) // RK(C)				*/
+	public static final int OP_BAND = 20; /*	A B C	R(A) := RK(B) & RK(C)				*/
+	public static final int OP_BOR = 21; /*	A B C	R(A) := RK(B) | RK(C)				*/
+	public static final int OP_BXOR = 22; /*	A B C	R(A) := RK(B) ~ RK(C)				*/
+	public static final int OP_SHL = 23; /*	A B C	R(A) := RK(B) << RK(C)				*/
+	public static final int OP_SHR = 24; /*	A B C	R(A) := RK(B) >> RK(C)				*/
+	public static final int OP_UNM = 25; /*	A B	R(A) := -R(B)					*/
+	public static final int OP_BNOT = 26; /*	A B	R(A) := ~R(B)					*/
+	public static final int OP_NOT = 27; /*	A B	R(A) := not R(B)				*/
+	public static final int OP_LEN = 28; /*	A B	R(A) := length of R(B)				*/
 
-	public static final int OP_CONCAT = 22; /*	A B C	R(A) := R(B).. ... ..R(C)			*/
+	public static final int OP_CONCAT = 29; /*	A B C	R(A) := R(B).. ... ..R(C)			*/
 
-	public static final int OP_JMP = 23; /*	A sBx	pc+=sBx; if (A) close all upvalues >= R(A - 1)	*/
-	public static final int OP_EQ = 24; /*	A B C	if ((RK(B) == RK(C)) ~= A) then pc++		*/
-	public static final int OP_LT = 25; /*	A B C	if ((RK(B) <  RK(C)) ~= A) then pc++  		*/
-	public static final int OP_LE = 26; /*	A B C	if ((RK(B) <= RK(C)) ~= A) then pc++  		*/
+	public static final int OP_JMP = 30; /*	A sBx	pc+=sBx; if (A) close all upvalues >= R(A - 1)	*/
+	public static final int OP_EQ = 31; /*	A B C	if ((RK(B) == RK(C)) ~= A) then pc++		*/
+	public static final int OP_LT = 32; /*	A B C	if ((RK(B) <  RK(C)) ~= A) then pc++  		*/
+	public static final int OP_LE = 33; /*	A B C	if ((RK(B) <= RK(C)) ~= A) then pc++  		*/
 
-	public static final int OP_TEST = 27; /*	A C	if not (R(A) <=> C) then pc++			*/
-	public static final int OP_TESTSET = 28; /*	A B C	if (R(B) <=> C) then R(A) := R(B) else pc++	*/
+	public static final int OP_TEST = 34; /*	A C	if not (R(A) <=> C) then pc++			*/
+	public static final int OP_TESTSET = 35; /*	A B C	if (R(B) <=> C) then R(A) := R(B) else pc++	*/
 
-	public static final int OP_CALL = 29; /*	A B C	R(A), ... ,R(A+C-2) := R(A)(R(A+1), ... ,R(A+B-1)) */
-	public static final int OP_TAILCALL = 30; /*	A B C	return R(A)(R(A+1), ... ,R(A+B-1))		*/
-	public static final int OP_RETURN = 31; /*	A B	return R(A), ... ,R(A+B-2)	(see note)	*/
+	public static final int OP_CALL = 36; /*	A B C	R(A), ... ,R(A+C-2) := R(A)(R(A+1), ... ,R(A+B-1)) */
+	public static final int OP_TAILCALL = 37; /*	A B C	return R(A)(R(A+1), ... ,R(A+B-1))		*/
+	public static final int OP_RETURN = 38; /*	A B	return R(A), ... ,R(A+B-2)	(see note)	*/
 
-	public static final int OP_FORLOOP = 32; /*	A sBx	R(A)+=R(A+2);
+	public static final int OP_FORLOOP = 39; /*	A sBx	R(A)+=R(A+2);
 				if R(A) <?= R(A+1) then { pc+=sBx; R(A+3)=R(A) }*/
-	public static final int OP_FORPREP = 33; /*	A sBx	R(A)-=R(A+2); pc+=sBx				*/
+	public static final int OP_FORPREP = 40; /*	A sBx	R(A)-=R(A+2); pc+=sBx				*/
 
-	public static final int OP_TFORCALL = 34; /* A C	R(A+3), ... ,R(A+2+C) := R(A)(R(A+1), R(A+2));	*/
-	public static final int OP_TFORLOOP = 35; /* A sBx   if R(A+1) ~= nil then { R(A)=R(A+1); pc += sBx } */
-	public static final int OP_SETLIST = 36; /*	A B C	R(A)[(C-1)*FPF+i] := R(A+i), 1 <= i <= B	*/
+	public static final int OP_TFORCALL = 41; /* A C	R(A+3), ... ,R(A+2+C) := R(A)(R(A+1), R(A+2));	*/
+	public static final int OP_TFORLOOP = 42; /* A sBx   if R(A+1) ~= nil then { R(A)=R(A+1); pc += sBx } */
+	public static final int OP_SETLIST = 43; /*	A B C	R(A)[(C-1)*FPF+i] := R(A+i), 1 <= i <= B	*/
 
-	public static final int OP_CLOSURE = 37; /*	A Bx	R(A) := closure(KPROTO[Bx], R(A), ... ,R(A+n))	*/
+	public static final int OP_CLOSURE = 44; /*	A Bx	R(A) := closure(KPROTO[Bx], R(A), ... ,R(A+n))	*/
 
-	public static final int OP_VARARG = 38; /*	A B	R(A), R(A+1), ..., R(A+B-1) = vararg		*/
+	public static final int OP_VARARG = 45; /*	A B	R(A), R(A+1), ..., R(A+B-1) = vararg		*/
 
-	public static final int OP_EXTRAARG = 39; /* Ax	extra (larger) argument for previous opcode	*/
+	public static final int OP_EXTRAARG = 46; /* Ax	extra (larger) argument for previous opcode	*/
 
-	public static final int OP_SHL = 40; /*	A B C	R(A) := RK(B) << RK(C)				*/
-	public static final int OP_SHR = 41; /*	A B C	R(A) := RK(B) >> RK(C)				*/
-	public static final int OP_BAND = 42; /*	A B C	R(A) := RK(B) & RK(C)				*/
-	public static final int OP_BOR = 43; /*	A B C	R(A) := RK(B) | RK(C)				*/
-	public static final int OP_BXOR = 44; /*	A B C	R(A) := RK(B) ~ RK(C)				*/
-	public static final int OP_BNOT = 45; /*	A B	R(A) := ~R(B)					*/
-
-	public static final int NUM_OPCODES	= OP_BNOT + 1;
+	public static final int NUM_OPCODES	= OP_EXTRAARG + 1;
 
 	/* pseudo-opcodes used in parsing only.  */
 	public static final int OP_GT  = 63; // >
@@ -303,10 +303,17 @@ public class Lua {
 		 (0<<7) | (1<<6) | (OpArgK<<4) | (OpArgK<<2) | (iABC),		/* OP_ADD */
 		 (0<<7) | (1<<6) | (OpArgK<<4) | (OpArgK<<2) | (iABC),		/* OP_SUB */
 		 (0<<7) | (1<<6) | (OpArgK<<4) | (OpArgK<<2) | (iABC),		/* OP_MUL */
-		 (0<<7) | (1<<6) | (OpArgK<<4) | (OpArgK<<2) | (iABC),		/* OP_DIV */
 		 (0<<7) | (1<<6) | (OpArgK<<4) | (OpArgK<<2) | (iABC),		/* OP_MOD */
 		 (0<<7) | (1<<6) | (OpArgK<<4) | (OpArgK<<2) | (iABC),		/* OP_POW */
+		 (0<<7) | (1<<6) | (OpArgK<<4) | (OpArgK<<2) | (iABC),		/* OP_DIV */
+		 (0<<7) | (1<<6) | (OpArgK<<4) | (OpArgK<<2) | (iABC),		/* OP_IDIV */
+		 (0<<7) | (1<<6) | (OpArgK<<4) | (OpArgK<<2) | (iABC),		/* OP_BAND */
+		 (0<<7) | (1<<6) | (OpArgK<<4) | (OpArgK<<2) | (iABC),		/* OP_BOR */
+		 (0<<7) | (1<<6) | (OpArgK<<4) | (OpArgK<<2) | (iABC),		/* OP_BXOR */
+		 (0<<7) | (1<<6) | (OpArgK<<4) | (OpArgK<<2) | (iABC),		/* OP_SHL */
+		 (0<<7) | (1<<6) | (OpArgK<<4) | (OpArgK<<2) | (iABC),		/* OP_SHR */
 		 (0<<7) | (1<<6) | (OpArgR<<4) | (OpArgN<<2) | (iABC),		/* OP_UNM */
+		 (0<<7) | (1<<6) | (OpArgR<<4) | (OpArgN<<2) | (iABC),		/* OP_BNOT */
 		 (0<<7) | (1<<6) | (OpArgR<<4) | (OpArgN<<2) | (iABC),		/* OP_NOT */
 		 (0<<7) | (1<<6) | (OpArgR<<4) | (OpArgN<<2) | (iABC),		/* OP_LEN */
 		 (0<<7) | (1<<6) | (OpArgR<<4) | (OpArgR<<2) | (iABC),		/* OP_CONCAT */
@@ -327,12 +334,6 @@ public class Lua {
 		 (0<<7) | (1<<6) | (OpArgU<<4) | (OpArgN<<2) | (iABx),		/* OP_CLOSURE */
 		 (0<<7) | (1<<6) | (OpArgU<<4) | (OpArgN<<2) | (iABC),		/* OP_VARARG */
 		 (0<<7) | (0<<6) | (OpArgU<<4) | (OpArgU<<2) | (iAx),		/* OP_EXTRAARG */
-		 (0<<7) | (1<<6) | (OpArgK<<4) | (OpArgK<<2) | (iABC),		/* OP_SHL */
-		 (0<<7) | (1<<6) | (OpArgK<<4) | (OpArgK<<2) | (iABC),		/* OP_SHR */
-		 (0<<7) | (1<<6) | (OpArgK<<4) | (OpArgK<<2) | (iABC),		/* OP_BAND */
-		 (0<<7) | (1<<6) | (OpArgK<<4) | (OpArgK<<2) | (iABC),		/* OP_BOR */
-		 (0<<7) | (1<<6) | (OpArgK<<4) | (OpArgK<<2) | (iABC),		/* OP_BXOR */
-		 (0<<7) | (1<<6) | (OpArgR<<4) | (OpArgN<<2) | (iABC),		/* OP_BNOT */
 	  };
 
 	public static int getOpMode(int m) {

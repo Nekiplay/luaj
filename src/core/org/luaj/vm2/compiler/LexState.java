@@ -85,14 +85,14 @@ public class LexState extends Constants {
 	** grep "ORDER OPR" if you change these enums
 	*/
 	static final int
-	  OPR_ADD=0, OPR_SUB=1, OPR_MUL=2, OPR_DIV=3, OPR_MOD=4, OPR_POW=5,
-	  OPR_CONCAT=6,
-	  OPR_NE=7, OPR_EQ=8,
-	  OPR_LT=9, OPR_LE=10, OPR_GT=11, OPR_GE=12,
-	  OPR_AND=13, OPR_OR=14,
-	  OPR_SHL=15, OPR_SHR=16,
-	  OPR_BAND=17, OPR_BOR=18, OPR_BXOR=19,
-	  OPR_NOBINOPR=20;
+	  OPR_ADD=0, OPR_SUB=1, OPR_MUL=2, OPR_DIV=3, OPR_IDIV=4, OPR_MOD=5, OPR_POW=6,
+	  OPR_CONCAT=7,
+	  OPR_NE=8, OPR_EQ=9,
+	  OPR_LT=10, OPR_LE=11, OPR_GT=12, OPR_GE=13,
+	  OPR_AND=14, OPR_OR=15,
+	  OPR_SHL=16, OPR_SHR=17,
+	  OPR_BAND=18, OPR_BOR=19, OPR_BXOR=20,
+	  OPR_NOBINOPR=21;
 
 	static final int
 		OPR_MINUS=0, OPR_NOT=1, OPR_LEN=2, OPR_BNOT=3, OPR_NOUNOPR=4;
@@ -166,7 +166,8 @@ public class LexState extends Constants {
 		TK_CONCAT=279, TK_DOTS=280, TK_EQ=281, TK_GE=282, TK_LE=283, TK_NE=284,
 		TK_SHL=285, TK_SHR=286,
 		TK_BAND=287, TK_BOR=288, TK_BXOR=289, TK_BNOT=290,
-		TK_DBCOLON=291, TK_EOS=292, TK_NUMBER=293, TK_NAME=294, TK_STRING=295;
+		TK_DBCOLON=291, TK_EOS=292, TK_NUMBER=293, TK_NAME=294, TK_STRING=295,
+		TK_IDIV=296;
 	  
 	final static int FIRST_RESERVED = TK_AND;
 	final static int NUM_RESERVED = TK_WHILE+1-FIRST_RESERVED;
@@ -601,6 +602,15 @@ public class LexState extends Constants {
 				nextChar();
 				continue;
 			}
+ 			case '/': {
+ 				nextChar();
+ 				if (current == '/') {
+ 					nextChar();
+ 					return TK_IDIV;
+ 				} else {
+ 					return '/';
+ 				}
+ 			}
 			case '-': {
 				nextChar();
 				if (current != '-')
@@ -1569,6 +1579,8 @@ public class LexState extends Constants {
 			return OPR_BOR;
 		case TK_BXOR:
 			return OPR_BXOR;
+		case TK_IDIV:
+			return OPR_IDIV;
 		case '~':
 			return OPR_BXOR;
 		default:
@@ -1588,7 +1600,7 @@ public class LexState extends Constants {
 	};
 	
 	static Priority[] priority = {  /* ORDER OPR */
-	   new Priority(6, 6), new Priority(6, 6), new Priority(7, 7), new Priority(7, 7), new Priority(7, 7),  /* `+' `-' `/' `%' */
+	   new Priority(6, 6), new Priority(6, 6), new Priority(7, 7), new Priority(7, 7), new Priority(7, 7), new Priority(7, 7),  /* `+' `-' `*' `/` `//` `%` */
 	   new Priority(10, 9), new Priority(5, 4),                 /* power and concat (right associative) */
 	   new Priority(3, 3), new Priority(3, 3),                  /* equality and inequality */
 	   new Priority(3, 3), new Priority(3, 3), new Priority(3, 3), new Priority(3, 3),  /* order */
