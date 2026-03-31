@@ -166,6 +166,10 @@ public class LuaInteger extends LuaNumber {
 	public LuaValue   div( double rhs )        { return LuaDouble.ddiv(v,rhs); }
 	public LuaValue   div( int rhs )        { return LuaDouble.ddiv(v,rhs); }
 	public LuaValue   divInto( double lhs )   { return LuaDouble.ddiv(lhs,v); }
+	public LuaValue   idiv( LuaValue rhs )        { return rhs.idivFrom(v); }
+	public LuaValue   idiv( double rhs )        { return LuaDouble.didiv(v,rhs); }
+	public LuaValue   idiv( int rhs )        { return LuaDouble.didiv(v,rhs); }
+	public LuaValue   idivFrom( double lhs )   { return LuaDouble.didiv(lhs,v); }
 	public LuaValue   mod( LuaValue rhs )        { return rhs.modFrom(v); }
 	public LuaValue   mod( double rhs )        { return LuaDouble.dmod(v,rhs); }
 	public LuaValue   mod( int rhs )        { return LuaDouble.dmod(v,rhs); }

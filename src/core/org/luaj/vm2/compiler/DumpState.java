@@ -121,6 +121,21 @@ public class DumpState {
 		}
 	}
 	
+	void dumpInt64(long x) throws IOException {
+		if ( IS_LITTLE_ENDIAN ) {
+			writer.writeByte((int)(x&0xff));
+			writer.writeByte((int)((x>>8)&0xff));
+			writer.writeByte((int)((x>>16)&0xff));
+			writer.writeByte((int)((x>>24)&0xff));
+			writer.writeByte((int)((x>>32)&0xff));
+			writer.writeByte((int)((x>>40)&0xff));
+			writer.writeByte((int)((x>>48)&0xff));
+			writer.writeByte((int)((x>>56)&0xff));
+		} else {
+			writer.writeLong(x);
+		}
+	}
+	
 	void dumpString(LuaString s) throws IOException {
 		final int len = s.len().toint();
 		dumpInt( len+1 );
@@ -161,28 +176,33 @@ public class DumpState {
 				dumpChar(o.toboolean() ? 1 : 0);
 				break;
 			case LuaValue.TNUMBER:
-				switch (NUMBER_FORMAT) {
-				case NUMBER_FORMAT_FLOATS_OR_DOUBLES:
-					writer.write(LuaValue.TNUMBER);
-					dumpDouble(o.todouble());
-					break;
-				case NUMBER_FORMAT_INTS_ONLY:
-					if ( ! ALLOW_INTEGER_CASTING && ! o.isint() )
-						throw new java.lang.IllegalArgumentException("not an integer: "+o);
-					writer.write(LuaValue.TNUMBER);
-					dumpInt(o.toint());
-					break;
-				case NUMBER_FORMAT_NUM_PATCH_INT32:
-					if ( o.isint() ) {
-						writer.write(LuaValue.TINT);
-						dumpInt(o.toint());
-					} else {
+				if (o.islong()) {
+					writer.write(0x13);
+					dumpInt64(o.tolong());
+				} else {
+					switch (NUMBER_FORMAT) {
+					case NUMBER_FORMAT_FLOATS_OR_DOUBLES:
 						writer.write(LuaValue.TNUMBER);
 						dumpDouble(o.todouble());
+						break;
+					case NUMBER_FORMAT_INTS_ONLY:
+						if ( ! ALLOW_INTEGER_CASTING && ! o.isint() )
+							throw new java.lang.IllegalArgumentException("not an integer: "+o);
+						writer.write(LuaValue.TNUMBER);
+						dumpInt(o.toint());
+						break;
+					case NUMBER_FORMAT_NUM_PATCH_INT32:
+						if ( o.isint() ) {
+							writer.write(LuaValue.TINT);
+							dumpInt(o.toint());
+						} else {
+							writer.write(LuaValue.TNUMBER);
+							dumpDouble(o.todouble());
+						}
+						break;
+					default:
+						throw new IllegalArgumentException("number format not supported: "+NUMBER_FORMAT);
 					}
-					break;
-				default:
-					throw new IllegalArgumentException("number format not supported: "+NUMBER_FORMAT);
 				}
 				break;
 			case LuaValue.TSTRING:
@@ -246,15 +266,40 @@ public class DumpState {
 
 	void dumpHeader() throws IOException {
 		writer.write( LoadState.LUA_SIGNATURE );
-		writer.write( LoadState.LUAC_VERSION );
+		writer.write( LoadState.LUAC_VERSION_53 );
 		writer.write( LoadState.LUAC_FORMAT );
-		writer.write( IS_LITTLE_ENDIAN? 1: 0 );
+		writer.write( LoadState.LUAC_DATA );
 		writer.write( SIZEOF_INT );
 		writer.write( SIZEOF_SIZET );
 		writer.write( SIZEOF_INSTRUCTION );
 		writer.write( SIZEOF_LUA_NUMBER );
-		writer.write( NUMBER_FORMAT );
-		writer.write( LoadState.LUAC_TAIL );
+		writer.write( SIZEOF_LUA_NUMBER );
+		if ( IS_LITTLE_ENDIAN ) {
+			writer.write(0x78);
+			writer.write(0x56);
+			writer.write(0x00);
+			writer.write(0x00);
+			writer.write(0x00);
+			writer.write(0x00);
+			writer.write(0x00);
+			writer.write(0x00);
+		} else {
+			writer.write(0x00);
+			writer.write(0x00);
+			writer.write(0x00);
+			writer.write(0x00);
+			writer.write(0x00);
+			writer.write(0x00);
+			writer.write(0x56);
+			writer.write(0x78);
+		}
+		long luacNum = Double.doubleToLongBits(370.5);
+		if ( IS_LITTLE_ENDIAN ) {
+			dumpInt( (int) luacNum );
+			dumpInt( (int) (luacNum>>32) );
+		} else {
+			writer.writeLong(luacNum);
+		}
 	}
 
 	/*
@@ -263,6 +308,7 @@ public class DumpState {
 	public static int dump( Prototype f, OutputStream w, boolean strip ) throws IOException {
 		DumpState D = new DumpState(w,strip);
 		D.dumpHeader();
+		D.dumpChar(f.upvalues != null ? f.upvalues.length : 0);
 		D.dumpFunction(f);
 		return D.status;
 	}
@@ -292,6 +338,7 @@ public class DumpState {
 		D.NUMBER_FORMAT = numberFormat;
 		D.SIZEOF_LUA_NUMBER = (numberFormat==NUMBER_FORMAT_INTS_ONLY? 4: 8);
 		D.dumpHeader();
+		D.dumpChar(f.upvalues != null ? f.upvalues.length : 0);
 		D.dumpFunction(f);
 		return D.status;
 	}
