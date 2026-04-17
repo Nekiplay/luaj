@@ -362,8 +362,7 @@ public class LuaString extends LuaValue {
 	}
 
 	public boolean isnumber() {
-		double d = scannumber();
-		return ! Double.isNaN(d);
+		return false;
 	}
 	
 	public boolean isint() {
