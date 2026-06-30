@@ -22,6 +22,8 @@
 package org.luaj.vm2.lib.jse;
 
 import java.lang.reflect.Field;
+import java.util.HashMap;
+import java.util.Map;
 
 import org.luaj.vm2.LuaError;
 import org.luaj.vm2.LuaUserdata;
@@ -41,27 +43,61 @@ import org.luaj.vm2.LuaValue;
 class JavaInstance extends LuaUserdata {
 
 	JavaClass jclass;
-	
+	Map accessorCache;
+	static final Object NOT_FOUND = new Object();
+
 	JavaInstance(Object instance) {
 		super(instance);
 	}
 
 	public LuaValue get(LuaValue key) {
+		if ( accessorCache != null ) {
+			Object cached = accessorCache.get(key);
+			if ( cached != null ) {
+				if ( cached == NOT_FOUND )
+					return super.get(key);
+				if ( cached instanceof Field ) {
+					try {
+						return CoerceJavaToLua.coerce(((Field)cached).get(m_instance));
+					} catch (Exception e) {
+						throw new LuaError(e);
+					}
+				}
+				return (LuaValue) cached;
+			}
+		}
+
 		if ( jclass == null )
 			jclass = JavaClass.forClass(m_instance.getClass());
 		Field f = jclass.getField(key);
-		if ( f != null )
+		if ( f != null ) {
+			if ( accessorCache == null )
+				accessorCache = new HashMap();
+			accessorCache.put(key, f);
 			try {
 				return CoerceJavaToLua.coerce(f.get(m_instance));
 			} catch (Exception e) {
 				throw new LuaError(e);
 			}
+		}
 		LuaValue m = jclass.getMethod(key);
-		if ( m != null )
+		if ( m != null ) {
+			if ( accessorCache == null )
+				accessorCache = new HashMap();
+			accessorCache.put(key, m);
 			return m;
+		}
 		Class c = jclass.getInnerClass(key);
-		if ( c != null )
-			return JavaClass.forClass(c);
+		if ( c != null ) {
+			JavaClass jc = JavaClass.forClass(c);
+			if ( accessorCache == null )
+				accessorCache = new HashMap();
+			accessorCache.put(key, jc);
+			return jc;
+		}
+		if ( accessorCache == null )
+			accessorCache = new HashMap();
+		accessorCache.put(key, NOT_FOUND);
 		return super.get(key);
 	}
 
@@ -78,5 +114,5 @@ class JavaInstance extends LuaUserdata {
 			}
 		super.set(key, value);
 	} 	
-	
+
 }

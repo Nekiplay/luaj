@@ -23,9 +23,9 @@ package org.luaj.vm2.lib.jse;
 
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 import org.luaj.vm2.LuaError;
 import org.luaj.vm2.LuaFunction;
@@ -45,7 +45,7 @@ import org.luaj.vm2.Varargs;
  */
 class JavaMethod extends JavaMember {
 
-	static final Map methods = Collections.synchronizedMap(new HashMap());
+	static final Map methods = new ConcurrentHashMap();
 	
 	static JavaMethod forMethod(Method m) {
 		JavaMethod j = (JavaMethod) methods.get(m);
@@ -113,9 +113,11 @@ class JavaMethod extends JavaMember {
 	static class Overload extends LuaFunction {
 
 		final JavaMethod[] methods;
-		
+		final Map cache;
+
 		Overload(JavaMethod[] methods) {
 			this.methods = methods;
+			this.cache = new HashMap();
 		}
 
 		public LuaValue call() {
@@ -129,33 +131,55 @@ class JavaMethod extends JavaMember {
 		public LuaValue call(LuaValue arg1, LuaValue arg2) {
 			return invokeBestMethod(arg1.checkuserdata(), arg2);
 		}
-		
+
 		public LuaValue call(LuaValue arg1, LuaValue arg2, LuaValue arg3) {
 			return invokeBestMethod(arg1.checkuserdata(), LuaValue.varargsOf(arg2, arg3));
 		}
-		
+
 		public Varargs invoke(Varargs args) {
 			return invokeBestMethod(args.checkuserdata(1), args.subargs(2));
 		}
 
-		private LuaValue invokeBestMethod(Object instance, Varargs args) {
-			JavaMethod best = null;
-			int score = CoerceLuaToJava.SCORE_UNCOERCIBLE;
-			for ( int i=0; i<methods.length; i++ ) {
-				int s = methods[i].score(args);
-				if ( s < score ) {
-					score = s;
-					best = methods[i];
-					if ( score == 0 )
-						break;
+		private static long argsToKey(Varargs args) {
+			int n = args.narg();
+			long key = n;
+			for ( int i = 1; i <= n; i++ ) {
+				LuaValue v = args.arg(i);
+				int type = v.type();
+				key = (key << 6) ^ type;
+				if ( type == LuaValue.TNUMBER ) {
+					key = (key << 2) ^ (v.isint() ? 0x1 : 0x2);
+				} else if ( type == LuaValue.TUSERDATA ) {
+					Object obj = v.touserdata();
+					key = (key << 6) ^ (obj != null ? obj.getClass().hashCode() : 0);
 				}
 			}
-			
-			// any match? 
-			if ( best == null )
-				LuaValue.error("no coercible public method");
-			
-			// invoke it
+			return key;
+		}
+
+		private LuaValue invokeBestMethod(Object instance, Varargs args) {
+			long key = argsToKey(args);
+			JavaMethod best;
+			synchronized (cache) {
+				best = (JavaMethod) cache.get(new Long(key));
+			}
+			if ( best == null ) {
+				int score = CoerceLuaToJava.SCORE_UNCOERCIBLE;
+				for ( int i = 0; i < methods.length; i++ ) {
+					int s = methods[i].score(args);
+					if ( s < score ) {
+						score = s;
+						best = methods[i];
+						if ( score == 0 )
+							break;
+					}
+				}
+				if ( best == null )
+					LuaValue.error("no coercible public method");
+				synchronized (cache) {
+					cache.put(new Long(key), best);
+				}
+			}
 			return best.invokeMethod(instance, args);
 		}
 	}

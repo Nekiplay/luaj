@@ -57,26 +57,26 @@ class JavaMember extends VarArgFunction {
 	int score(Varargs args) {
 		int n = args.narg();
 		int s = n>fixedargs.length? CoerceLuaToJava.SCORE_WRONG_TYPE * (n-fixedargs.length): 0;
-		for ( int j=0; j<fixedargs.length; j++ )
+		int j = 0;
+		for ( ; j<fixedargs.length; j++ )
 			s += fixedargs[j].score( args.arg(j+1) );
 		if ( varargs != null )
-			for ( int k=fixedargs.length; k<n; k++ )
-				s += varargs.score( args.arg(k+1) );
+			for ( ; j<n; j++ )
+				s += varargs.score( args.arg(j+1) );
 		return s;
 	}
 	
 	protected Object[] convertArgs(Varargs args) {
-		Object[] a;
+		int n = args.narg();
+		int na = Math.max(fixedargs.length, n);
+		Object[] a = new Object[na];
 		if ( varargs == null ) {
-			a = new Object[fixedargs.length];
-			for ( int i=0; i<a.length; i++ )
-				a[i] = fixedargs[i].coerce( args.arg(i+1) );
-		} else {
-			int n = Math.max(fixedargs.length,args.narg());
-			a = new Object[n];
 			for ( int i=0; i<fixedargs.length; i++ )
 				a[i] = fixedargs[i].coerce( args.arg(i+1) );
-			for ( int i=fixedargs.length; i<n; i++ )
+		} else {
+			for ( int i=0; i<fixedargs.length; i++ )
+				a[i] = fixedargs[i].coerce( args.arg(i+1) );
+			for ( int i=fixedargs.length; i<na; i++ )
 				a[i] = varargs.coerce( args.arg(i+1) );
 		}
 		return a;

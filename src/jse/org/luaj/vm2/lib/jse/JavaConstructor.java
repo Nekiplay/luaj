@@ -23,9 +23,9 @@ package org.luaj.vm2.lib.jse;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 import org.luaj.vm2.LuaError;
 import org.luaj.vm2.LuaValue;
@@ -46,7 +46,7 @@ import org.luaj.vm2.lib.VarArgFunction;
  */
 class JavaConstructor extends JavaMember {
 
-	static final Map constructors = Collections.synchronizedMap(new HashMap());
+	static final Map constructors = new ConcurrentHashMap();
 	
 	static JavaConstructor forConstructor(Constructor c) {
 		JavaConstructor j = (JavaConstructor) constructors.get(c);
@@ -87,30 +87,55 @@ class JavaConstructor extends JavaMember {
 	 * when key is "new" and there is more than one public constructor.
 	 */
 	static class Overload extends VarArgFunction {
-		final JavaConstructor[] constructors; 
+		final JavaConstructor[] constructors;
+		final Map cache;
+
 		public Overload(JavaConstructor[] c) {
 			this.constructors = c;
+			this.cache = new HashMap();
 		}
 
 		public Varargs invoke(Varargs args) {
-			JavaConstructor best = null;
-			int score = CoerceLuaToJava.SCORE_UNCOERCIBLE;
-			for ( int i=0; i<constructors.length; i++ ) {
-				int s = constructors[i].score(args);
-				if ( s < score ) {
-					score = s;
-					best = constructors[i];
-					if ( score == 0 )
-						break;
+			long key = argsToKey(args);
+			JavaConstructor best;
+			synchronized (cache) {
+				best = (JavaConstructor) cache.get(new Long(key));
+			}
+			if ( best == null ) {
+				int score = CoerceLuaToJava.SCORE_UNCOERCIBLE;
+				for ( int i = 0; i < constructors.length; i++ ) {
+					int s = constructors[i].score(args);
+					if ( s < score ) {
+						score = s;
+						best = constructors[i];
+						if ( score == 0 )
+							break;
+					}
+				}
+				if ( best == null )
+					LuaValue.error("no coercible public method");
+				synchronized (cache) {
+					cache.put(new Long(key), best);
 				}
 			}
-			
-			// any match? 
-			if ( best == null )
-				LuaValue.error("no coercible public method");
-			
-			// invoke it
 			return best.invoke(args);
+		}
+
+		static long argsToKey(Varargs args) {
+			int n = args.narg();
+			long key = n;
+			for ( int i = 1; i <= n; i++ ) {
+				LuaValue v = args.arg(i);
+				int type = v.type();
+				key = (key << 6) ^ type;
+				if ( type == LuaValue.TNUMBER ) {
+					key = (key << 2) ^ (v.isint() ? 0x1 : 0x2);
+				} else if ( type == LuaValue.TUSERDATA ) {
+					Object obj = v.touserdata();
+					key = (key << 6) ^ (obj != null ? obj.getClass().hashCode() : 0);
+				}
+			}
+			return key;
 		}
 	}
 }

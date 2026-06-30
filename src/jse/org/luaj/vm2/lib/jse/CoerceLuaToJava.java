@@ -22,9 +22,9 @@
 package org.luaj.vm2.lib.jse;
 
 import java.lang.reflect.Array;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 import org.luaj.vm2.LuaString;
 import org.luaj.vm2.LuaTable;
@@ -78,7 +78,7 @@ public class CoerceLuaToJava {
 		return getCoercion(clazz).coerce(value);
 	}
 	
-	static final Map COERCIONS = Collections.synchronizedMap(new HashMap());
+	static final Map COERCIONS = new ConcurrentHashMap();
 	
 	static final class BoolCoercion implements Coercion {
 		public String toString() {
@@ -262,6 +262,8 @@ public class CoerceLuaToJava {
 		}
 	}
 
+	static final Map inheritanceLevelsCache = new ConcurrentHashMap();
+
 	/** 
 	 * Determine levels of inheritance between a base class and a subclass
 	 * @param baseclass base class to look for
@@ -274,10 +276,15 @@ public class CoerceLuaToJava {
 			return SCORE_UNCOERCIBLE;
 		if ( baseclass == subclass )
 			return 0;
+		long cacheKey = ((long) System.identityHashCode(baseclass) << 32) ^ System.identityHashCode(subclass);
+		Integer cached = (Integer) inheritanceLevelsCache.get(new Long(cacheKey));
+		if ( cached != null )
+			return cached.intValue();
 		int min = Math.min( SCORE_UNCOERCIBLE, inheritanceLevels( baseclass, subclass.getSuperclass() ) + 1 );
 		Class[] ifaces = subclass.getInterfaces();
 		for ( int i=0; i<ifaces.length; i++ ) 
 			min = Math.min(min, inheritanceLevels(baseclass, ifaces[i]) + 1 );
+		inheritanceLevelsCache.put(new Long(cacheKey), new Integer(min));
 		return min;
 	}
 	

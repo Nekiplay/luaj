@@ -84,6 +84,9 @@ public class LuaString extends LuaValue {
 	/** The hashcode for this string.  Computed at construct time. */
 	private final int m_hashcode;
 
+	/** Cached Java String representation, decoded lazily on first tojstring() call. */
+	private String m_jstring;
+
 	/** Size of cache of recent short strings. This is the maximum number of LuaStrings that
 	 * will be retained in the cache of recent short strings.  Exposed to package for testing. */
 	static final int RECENT_STRINGS_CACHE_SIZE = 128;
@@ -257,7 +260,9 @@ public class LuaString extends LuaValue {
 	}
 	
 	public String tojstring() {
-		return decodeAsUtf8(m_bytes, m_offset, m_length);
+		if ( m_jstring == null )
+			m_jstring = decodeAsUtf8(m_bytes, m_offset, m_length);
+		return m_jstring;
 	}
 
 	// unary operators
