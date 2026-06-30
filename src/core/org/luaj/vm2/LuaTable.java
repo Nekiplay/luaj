@@ -112,11 +112,24 @@ public class LuaTable extends LuaValue implements Metatable {
 		int nu = (unnamed!=null? unnamed.length: 0);
 		int nl = (lastarg!=null? lastarg.narg(): 0);
 		presize(nu+nl, nn>>1);
-		for ( int i=0; i<nu; i++ )
-			rawset(i+1,unnamed[i]);
-		if ( lastarg != null )
-			for ( int i=1,n=lastarg.narg(); i<=n; ++i )
-				rawset(nu+i,lastarg.arg(i));
+
+		if ( m_metatable == null ) {
+			// Fast path: fill unnamed values directly into the pre-sized array
+			for ( int i=0; i<nu; i++ ) {
+				LuaValue v = unnamed[i];
+				if ( !v.isnil() )
+					array[i] = v;
+			}
+			if ( lastarg != null )
+				for ( int i=1,n=lastarg.narg(); i<=n; ++i )
+					rawset(nu+i,lastarg.arg(i));
+		} else {
+			for ( int i=0; i<nu; i++ )
+				rawset(i+1,unnamed[i]);
+			if ( lastarg != null )
+				for ( int i=1,n=lastarg.narg(); i<=n; ++i )
+					rawset(nu+i,lastarg.arg(i));
+		}
 		for ( int i=0; i<nn; i+=2 )
 			if (!named[i+1].isnil())
 				rawset(named[i], named[i+1]);
@@ -139,9 +152,12 @@ public class LuaTable extends LuaValue implements Metatable {
 		int nskip = firstarg-1;
 		int n = Math.max(varargs.narg()-nskip,0);
 		presize( n, 1 );
-		set(N, valueOf(n));
-		for ( int i=1; i<=n; i++ )
-			set(i, varargs.arg(i+nskip));
+		hashset( N, valueOf(n) );
+		for ( int i=1; i<=n; i++ ) {
+			LuaValue v = varargs.arg(i+nskip);
+			if ( !v.isnil() )
+				array[i-1] = v;
+		}
 	}
 	
 	public int type() {
@@ -229,7 +245,11 @@ public class LuaTable extends LuaValue implements Metatable {
 
 	public LuaValue rawget( int key ) {
 		if ( key>0 && key<=array.length ) {
-			LuaValue v = m_metatable == null ? array[key-1] : m_metatable.arrayget(array, key-1);
+			LuaValue v;
+			if ( m_metatable == null )
+				v = array[key-1];
+			else
+				v = m_metatable.arrayget(array, key-1);
 			return v != null ? v : NIL;
 		}
 		return hashget( LuaInteger.valueOf(key) );
@@ -239,8 +259,11 @@ public class LuaTable extends LuaValue implements Metatable {
 		if ( key.isinttype() ) {
 			int ikey = key.toint();
 			if ( ikey>0 && ikey<=array.length ) {
-				LuaValue v = m_metatable == null
-						? array[ikey-1] : m_metatable.arrayget(array, ikey-1);
+				LuaValue v;
+				if ( m_metatable == null )
+					v = array[ikey-1];
+				else
+					v = m_metatable.arrayget(array, ikey-1);
 				return v != null ? v : NIL;
 			}
 		}
@@ -286,8 +309,10 @@ public class LuaTable extends LuaValue implements Metatable {
 	/** Set an array element */
 	private boolean arrayset( int key, LuaValue value ) {
 		if ( key>0 && key<=array.length ) {
-			array[key - 1] = value.isnil() ? null :
-				(m_metatable != null ? m_metatable.wrap(value) : value);
+			if ( m_metatable == null )
+				array[key - 1] = value.isnil() ? null : value;
+			else
+				array[key - 1] = value.isnil() ? null : m_metatable.wrap(value);
 			return true;
 		}
 		return false;
