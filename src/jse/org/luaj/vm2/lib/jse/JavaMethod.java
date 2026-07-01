@@ -23,6 +23,7 @@ package org.luaj.vm2.lib.jse;
 
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
+import java.lang.invoke.MethodType;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
@@ -62,22 +63,26 @@ class JavaMethod extends JavaMember {
 	}
 	
 	final Method method;
-	final MethodHandle mh;
+	final MethodHandle spreadTarget;
 	final boolean isStatic;
 	
 	private JavaMethod(Method m) {
 		super( m.getParameterTypes(), m.getModifiers() );
 		this.method = m;
 		this.isStatic = Modifier.isStatic(m.getModifiers());
-		MethodHandle handle = null;
+		MethodHandle spread = null;
 		try {
 			if (!m.isAccessible())
 				m.setAccessible(true);
 			MethodHandles.Lookup lookup = MethodHandles.lookup();
-			handle = lookup.unreflect(m);
+			MethodHandle mh = lookup.unreflect(m);
+			int paramCount = m.getParameterCount();
+			int spreadCount = isStatic ? paramCount : paramCount + 1;
+			spread = mh.asSpreader(Object[].class, spreadCount)
+				.asType(MethodType.methodType(Object.class, Object[].class));
 		} catch (SecurityException | IllegalAccessException e) {
 		}
-		this.mh = handle;
+		this.spreadTarget = spread;
 	}
 
 	public LuaValue call() {
@@ -104,15 +109,15 @@ class JavaMethod extends JavaMember {
 		Object[] a = convertArgs(args);
 		try {
 			Object result;
-			if (mh != null) {
+			if (spreadTarget != null) {
 				try {
 					if (isStatic) {
-						result = mh.invokeWithArguments(a);
+						result = spreadTarget.invoke(a);
 					} else {
 						Object[] withInstance = new Object[a.length + 1];
 						withInstance[0] = instance;
 						System.arraycopy(a, 0, withInstance, 1, a.length);
-						result = mh.invokeWithArguments(withInstance);
+						result = spreadTarget.invoke(withInstance);
 					}
 				} catch (LuaError e) {
 					throw e;
