@@ -21,6 +21,7 @@
 ******************************************************************************/
 package org.luaj.vm2;
 
+import java.io.BufferedInputStream;
 import java.io.DataInputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -473,7 +474,7 @@ public class LoadState {
 	/** Private constructor for create a load state */
 	private LoadState( InputStream stream, String name ) {
 		this.name = name;
-		this.is = new DataInputStream( stream );
+		this.is = new DataInputStream( new BufferedInputStream(stream) );
 	}
 	
 	private static final class GlobalsUndumper implements Globals.Undumper {

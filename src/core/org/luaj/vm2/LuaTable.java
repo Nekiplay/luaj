@@ -268,6 +268,7 @@ public class LuaTable extends LuaValue implements Metatable {
 				v = m_metatable.arrayget(array, key-1);
 			return v != null ? v : NIL;
 		}
+		if ( hashEntries == 0 ) return NIL;
 		return hashget( key );
 	}
 
@@ -283,6 +284,7 @@ public class LuaTable extends LuaValue implements Metatable {
 				return v != null ? v : NIL;
 			}
 		}
+		if ( hashEntries == 0 ) return NIL;
 		return hashget( key );
 	}
 
