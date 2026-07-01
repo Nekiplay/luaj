@@ -21,6 +21,7 @@
 ******************************************************************************/
 package org.luaj.vm2;
 
+import org.luaj.vm2.lib.*;
 import org.luaj.vm2.lib.DebugLib.CallFrame;
 
 /**
@@ -401,20 +402,36 @@ public class LuaClosure extends LuaFunction {
 					case (2<<Lua.POS_B) | (2<<Lua.POS_C): stack[a] = stack[a].call(stack[a+1]); continue;
 					case (3<<Lua.POS_B) | (2<<Lua.POS_C): stack[a] = stack[a].call(stack[a+1],stack[a+2]); continue;
 					case (4<<Lua.POS_B) | (2<<Lua.POS_C): stack[a] = stack[a].call(stack[a+1],stack[a+2],stack[a+3]); continue;
-					default:
-						b = i>>>23;
-						c = (i>>14)&0x1ff;
-						v = stack[a].invoke(b>0?
-							varargsOf(stack, a+1, b-1): // exact arg count
-							varargsOf(stack, a+1, top-v.narg()-(a+1), v));  // from prev top
-						if ( c > 0 ) {
-							v.copyto(stack, a, c-1);
-							v = NONE;
-						} else {
-							top = a + v.narg();
-							v = v.dealias();
-						}
-						continue;
+				default:
+					b = i>>>23;
+					c = (i>>14)&0x1ff;
+					if ( b > 0 ) {
+					    LuaValue fn = stack[a];
+					    int nargs = b-1;
+					    if (fn instanceof ZeroArgFunction) {
+					        v = ((ZeroArgFunction)fn).call();
+					    } else if (fn instanceof OneArgFunction) {
+					        v = nargs >= 1 ? ((OneArgFunction)fn).call(stack[a+1]) : ((OneArgFunction)fn).call();
+					    } else if (fn instanceof TwoArgFunction) {
+					        v = nargs >= 2 ? ((TwoArgFunction)fn).call(stack[a+1], stack[a+2]) : ((TwoArgFunction)fn).call(stack[a+1], NIL);
+					    } else if (fn instanceof ThreeArgFunction) {
+					        v = nargs >= 3 ? ((ThreeArgFunction)fn).call(stack[a+1], stack[a+2], stack[a+3]) : ((ThreeArgFunction)fn).call(stack[a+1], stack[a+2], NIL);
+					    } else if (fn instanceof VarArgFunction) {
+					        v = ((VarArgFunction)fn).invoke(varargsOf(stack, a+1, nargs));
+					    } else {
+					        v = fn.invoke(varargsOf(stack, a+1, nargs));
+					    }
+					} else {
+					    v = stack[a].invoke(varargsOf(stack, a+1, top - v.narg() - (a+1), v));
+					}
+					if ( c > 0 ) {
+						v.copyto(stack, a, c-1);
+						v = NONE;
+					} else {
+						top = a + v.narg();
+						v = v.dealias();
+					}
+					continue;
 					}
 					
 				case Lua.OP_TAILCALL: /*	A B C	return R(A)(R(A+1), ... ,R(A+B-1))		*/
@@ -423,12 +440,28 @@ public class LuaClosure extends LuaFunction {
 					case (2<<Lua.POS_B): return new TailcallVarargs(stack[a], stack[a+1]);
 					case (3<<Lua.POS_B): return new TailcallVarargs(stack[a], varargsOf(stack[a+1],stack[a+2]));
 					case (4<<Lua.POS_B): return new TailcallVarargs(stack[a], varargsOf(stack[a+1],stack[a+2],stack[a+3]));
-					default:
-						b = i>>>23;
-						v = b>0?
-							varargsOf(stack,a+1,b-1): // exact arg count
-							varargsOf(stack, a+1, top-v.narg()-(a+1), v); // from prev top
-						return new TailcallVarargs( stack[a], v );
+				default:
+					b = i>>>23;
+					if ( b > 0 ) {
+					    LuaValue fn = stack[a];
+					    int nargs = b-1;
+					    if (fn instanceof ZeroArgFunction) {
+					        return fn.call();
+					    } else if (fn instanceof OneArgFunction) {
+					        return nargs >= 1 ? fn.call(stack[a+1]) : fn.call();
+					    } else if (fn instanceof TwoArgFunction) {
+					        return nargs >= 2 ? fn.call(stack[a+1], stack[a+2]) : fn.call(stack[a+1], NIL);
+					    } else if (fn instanceof ThreeArgFunction) {
+					        return nargs >= 3 ? fn.call(stack[a+1], stack[a+2], stack[a+3]) : fn.call(stack[a+1], stack[a+2], NIL);
+					    } else if (fn instanceof VarArgFunction) {
+					        return fn.invoke(varargsOf(stack, a+1, nargs));
+					    } else {
+					        return fn.invoke(varargsOf(stack, a+1, nargs));
+					    }
+					} else {
+					    v = varargsOf(stack, a+1, top - v.narg() - (a+1), v);
+					    return new TailcallVarargs(stack[a], v);
+					}
 					}
 					
 				case Lua.OP_RETURN: /*	A B	return R(A), ... ,R(A+B-2)	(see note)	*/
