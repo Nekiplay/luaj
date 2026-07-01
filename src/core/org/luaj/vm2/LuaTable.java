@@ -329,12 +329,28 @@ public class LuaTable extends LuaValue implements Metatable {
 			pos = n;
 		else if (pos > n)
 			return NONE;
+
 		LuaValue v = get(pos);
+		if ( v.isnil() )
+			return NONE;
+
+		if ( m_metatable == null && pos > 0 && pos <= array.length ) {
+			int idx = pos - 1;
+			int runEnd = idx;
+			while ( runEnd < array.length && array[runEnd] != null )
+				++runEnd;
+			int count = runEnd - idx - 1;
+			if ( count > 0 )
+				System.arraycopy(array, idx + 1, array, idx, count);
+			array[runEnd - 1] = null;
+			return v;
+		}
+
 		for ( LuaValue r=v; !r.isnil(); ) {
 			r = get(pos+1);
 			set(pos++, r);
 		}
-		return v.isnil()? NONE: v;
+		return v;
 	}
 
 	/** Insert an element at a position in a list-table
@@ -345,6 +361,19 @@ public class LuaTable extends LuaValue implements Metatable {
 	public void insert(int pos, LuaValue value) {
 		if ( pos == 0 )
 			pos = length()+1;
+
+		if ( m_metatable == null && pos > 0 && pos <= array.length ) {
+			int idx = pos - 1;
+			int runEnd = idx;
+			while ( runEnd < array.length && array[runEnd] != null )
+				++runEnd;
+			if ( runEnd < array.length ) {
+				System.arraycopy(array, idx, array, idx + 1, runEnd - idx);
+				array[idx] = value;
+				return;
+			}
+		}
+
 		while ( ! value.isnil() ) {
 			LuaValue v = get( pos );
 			set(pos++, value);
@@ -362,10 +391,14 @@ public class LuaTable extends LuaValue implements Metatable {
 	public LuaValue concat(LuaString sep, int i, int j) {
 		Buffer  sb = new Buffer ();
 		if ( i<=j ) {
-			sb.append( get(i).checkstring() );
-			while ( ++i<=j ) {
-				sb.append( sep );
+			if ( m_metatable == null && j <= array.length ) {
+				sb.append( array[i-1].checkstring() );
+				while ( ++i<=j )
+					sb.append( sep ).append( array[i-1].checkstring() );
+			} else {
 				sb.append( get(i).checkstring() );
+				while ( ++i<=j )
+					sb.append( sep ).append( get(i).checkstring() );
 			}
 		}
 		return sb.tostring();
@@ -388,20 +421,20 @@ public class LuaTable extends LuaValue implements Metatable {
 	}
 
 	public int rawlen() {
-		int a = getArrayLength();
-		int n = a+1,m=0;
-		while ( !rawget(n).isnil() ) {
-			m = n;
-			n += a+getHashLength()+1;
+		int j = 0;
+		int i = 1;
+		while (!rawget(i).isnil()) {
+			j = i;
+			i <<= 1;
 		}
-		while ( n > m+1 ) {
-			int k = (n+m) / 2;
-			if ( !rawget(k).isnil() )
-				m = k;
+		while (i > j + 1) {
+			int k = (j + i) / 2;
+			if (rawget(k).isnil())
+				i = k;
 			else
-				n = k;
+				j = k;
 		}
-		return m;
+		return j;
 	}
 
 	/**
@@ -816,8 +849,13 @@ public class LuaTable extends LuaValue implements Metatable {
 			dropWeakArrayValues();
 		}
 		int n = length();
-		if ( n > 1 )
-			heapSort(n, comparator.isnil() ? null : comparator);
+		if ( n > 1 ) {
+			if ( m_metatable == null && n <= array.length ) {
+				directHeapSort(n, comparator.isnil() ? null : comparator);
+			} else {
+				heapSort(n, comparator.isnil() ? null : comparator);
+			}
+		}
 	}
 
 	private void heapSort(int count, LuaValue cmpfunc) {
@@ -852,6 +890,49 @@ public class LuaTable extends LuaValue implements Metatable {
 
 	private boolean compare(int i, int j, LuaValue cmpfunc) {
 		LuaValue a = get(i), b = get(j);
+		if ( a == null || b == null )
+			return false;
+		if ( cmpfunc != null ) {
+			return cmpfunc.call(a,b).toboolean();
+		} else {
+			return a.lt_b(b);
+		}
+	}
+
+	// ---- direct array sort (no metatable fast path) ----
+
+	private void directHeapSort(int count, LuaValue cmpfunc) {
+		directHeapify(count, cmpfunc);
+		for ( int end=count; end>1; ) {
+			LuaValue a = array[end-1];
+			array[end-1] = array[0];
+			array[0] = a;
+			directSiftDown(1, --end, cmpfunc);
+		}
+	}
+
+	private void directHeapify(int count, LuaValue cmpfunc) {
+		for ( int start=count/2; start>0; --start )
+			directSiftDown(start, count, cmpfunc);
+	}
+
+	private void directSiftDown(int start, int end, LuaValue cmpfunc) {
+		for ( int root=start; root*2 <= end; ) {
+			int child = root*2;
+			if (child < end && directCompare(child, child + 1, cmpfunc))
+				++child;
+			if (directCompare(root, child, cmpfunc)) {
+				LuaValue a = array[root-1];
+				array[root-1] = array[child-1];
+				array[child-1] = a;
+				root = child;
+			} else
+				return;
+		}
+	}
+
+	private boolean directCompare(int i, int j, LuaValue cmpfunc) {
+		LuaValue a = array[i-1], b = array[j-1];
 		if ( a == null || b == null )
 			return false;
 		if ( cmpfunc != null ) {
@@ -928,8 +1009,17 @@ public class LuaTable extends LuaValue implements Metatable {
 				return NONE;
 			try {
 				LuaValue[] v = new LuaValue[n];
-				while (--n >= 0)
-					v[n] = get(i+n);
+				int nn = n;
+				if ( m_metatable == null && i >= 1 && j <= array.length ) {
+					int base = i - 1;
+					while (--nn >= 0) {
+						LuaValue val = array[base + nn];
+						v[nn] = (val != null) ? val : NIL;
+					}
+				} else {
+					while (--nn >= 0)
+						v[nn] = get(i + nn);
+				}
 				return varargsOf(v);
 			} catch (OutOfMemoryError e) {
 				throw new LuaError("too many results to unpack [out of memory]: " + n);
