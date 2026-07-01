@@ -866,8 +866,29 @@ public class FuncState extends Constants {
 		t.k = LexState.VINDEXED;
 	}
 
+	private LuaValue constval(expdesc e) {
+		if (e.k == LexState.VKNUM) return e.u.nval();
+		if (e.k == LexState.VK) return f.k[e.u.info];
+		return null;
+	}
+
 	boolean constfolding(int op, expdesc e1, expdesc e2) {
 		LuaValue v1, v2, r;
+		if (op == OP_CONCAT) {
+			v1 = constval(e1);
+			v2 = constval(e2);
+			if (v1 == null || v2 == null)
+				return false;
+			if (e1.hasjumps() || e2.hasjumps())
+				return false;
+			r = v1.concat(v2);
+			int idx = addk(r);
+			e1.k = LexState.VK;
+			e1.u.info = idx;
+			e1.t.i = LexState.NO_JUMP;
+			e1.f.i = LexState.NO_JUMP;
+			return true;
+		}
 		if (!e1.isnumeral() || !e2.isnumeral())
 			return false;
 		if ((op == OP_DIV || op == OP_MOD || op == OP_IDIV) && e2.u.nval().eq_b(LuaValue.ZERO))
@@ -932,21 +953,60 @@ public class FuncState extends Constants {
 	void codearith(int op, expdesc e1, expdesc e2, int line) {
 		if (constfolding(op, e1, e2))
 			return;
-		else {
-			int o2 = (op != OP_UNM && op != OP_LEN) ? this.exp2RK(e2)
-					: 0;
-			int o1 = this.exp2RK(e1);
-			if (o1 > o2) {
-				this.freeexp(e1);
-				this.freeexp(e2);
-			} else {
-				this.freeexp(e2);
-				this.freeexp(e1);
+
+		// Strength reduction for identity and simple transforms
+		LuaValue cv2 = constval(e2);
+		if (cv2 != null && cv2.isnumber()) {
+			double d = cv2.todouble();
+			if (op == OP_ADD && d == 0.0) {
+				freeexp(e2);
+				return;
 			}
-			e1.u.info = this.codeABC(op, 0, o1, o2);
-			e1.k = LexState.VRELOCABLE;
-			fixline(line);
+			if (op == OP_SUB && d == 0.0) {
+				freeexp(e2);
+				return;
+			}
+			if (op == OP_MUL && d == 1.0) {
+				freeexp(e2);
+				return;
+			}
+			if (op == OP_DIV && d == 1.0) {
+				freeexp(e2);
+				return;
+			}
+			if (op == OP_MUL && d == 2.0) {
+				freeexp(e2);
+				int o1 = exp2RK(e1);
+				freeexp(e1);
+				e1.u.info = codeABC(OP_ADD, 0, o1, o1);
+				e1.k = LexState.VRELOCABLE;
+				fixline(line);
+				return;
+			}
+			if (op == OP_POW && d == 2.0) {
+				freeexp(e2);
+				int o1 = exp2RK(e1);
+				freeexp(e1);
+				e1.u.info = codeABC(OP_MUL, 0, o1, o1);
+				e1.k = LexState.VRELOCABLE;
+				fixline(line);
+				return;
+			}
 		}
+
+		int o2 = (op != OP_UNM && op != OP_LEN) ? this.exp2RK(e2)
+				: 0;
+		int o1 = this.exp2RK(e1);
+		if (o1 > o2) {
+			this.freeexp(e1);
+			this.freeexp(e2);
+		} else {
+			this.freeexp(e2);
+			this.freeexp(e1);
+		}
+		e1.u.info = this.codeABC(op, 0, o1, o2);
+		e1.k = LexState.VRELOCABLE;
+		fixline(line);
 	}
 
 	void codecomp(int /* OpCode */op, int cond, expdesc e1, expdesc e2) {
@@ -1058,7 +1118,16 @@ public class FuncState extends Constants {
 		}
 		case LexState.OPR_CONCAT: {
 			this.exp2val(e2);
-			if (e2.k == LexState.VRELOCABLE
+			LuaValue cv1 = constval(e1);
+			LuaValue cv2 = constval(e2);
+			if (cv1 != null && cv2 != null
+					&& !e1.hasjumps() && !e2.hasjumps()) {
+				LuaValue r = cv1.concat(cv2);
+				e1.k = LexState.VK;
+				e1.u.info = addk(r);
+				e1.t.i = LexState.NO_JUMP;
+				e1.f.i = LexState.NO_JUMP;
+			} else if (e2.k == LexState.VRELOCABLE
 					&& GET_OPCODE(this.getcode(e2)) == OP_CONCAT) {
 				_assert (e1.u.info == GETARG_B(this.getcode(e2)) - 1);
 				this.freeexp(e1);

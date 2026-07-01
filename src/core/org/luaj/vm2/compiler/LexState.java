@@ -2176,6 +2176,14 @@ public class LexState extends Constants {
 				statement();
 				return; /* 'return' must be last statement */
 			}
+			if (t.token == TK_BREAK || t.token == TK_GOTO) {
+				statement();
+				/* Dead code elimination: after unconditional jump, drain remaining
+				 * statements in this block (still parse to keep labels/gotos consistent). */
+				while (!block_follow(true))
+					statement();
+				return;
+			}
 			statement();
 		}
 	}

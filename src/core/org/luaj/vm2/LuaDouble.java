@@ -61,7 +61,7 @@ public class LuaDouble extends LuaNumber {
 	
 	/** Constant LuaDouble representing negative infinity */
 	public static final LuaDouble NEGINF = new LuaDouble( Double.NEGATIVE_INFINITY );
-	
+
 	/** Constant String representation for NaN (not a number), "nan" */
 	public static final String JSTR_NAN    = "nan";
 	

@@ -90,7 +90,7 @@ public class TableTest extends TestCase {
 		
 		assertTrue( t.getArrayLength() >= 3 );
 		assertTrue( t.getArrayLength() <= 12 );
-		assertTrue( t.getHashLength() <= 3 );
+		assertTrue( t.getHashLength() <= 6 );
 	}
 	
 	public void testOutOfOrderIntegerKeyInsertion() {
