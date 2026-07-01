@@ -36,6 +36,7 @@ import org.luaj.vm2.lib.jse.JsePlatformTest;
 import org.luaj.vm2.lib.jse.LuaJavaCoercionTest;
 import org.luaj.vm2.lib.jse.LuajavaAccessibleMembersTest;
 import org.luaj.vm2.lib.jse.LuajavaClassMembersTest;
+import org.luaj.vm2.lib.jse.IndyBenchmarkTest;
 import org.luaj.vm2.lib.jse.OsLibTest;
 import org.luaj.vm2.script.ScriptEngineTests;
 
@@ -91,6 +92,7 @@ public class AllTests {
 		lib.addTestSuite(LuajavaClassMembersTest.class);
 		lib.addTestSuite(LuaJavaCoercionTest.class);
 		lib.addTestSuite(RequireClassTest.class);
+		lib.addTestSuite(IndyBenchmarkTest.class);
 		lib.addTestSuite(OsLibTest.class);
 		suite.addTest(lib);
 

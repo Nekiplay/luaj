@@ -21,8 +21,11 @@
 ******************************************************************************/
 package org.luaj.vm2.lib.jse;
 
+import java.lang.invoke.MethodHandle;
+import java.lang.invoke.MethodHandles;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.lang.reflect.Modifier;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -59,15 +62,22 @@ class JavaMethod extends JavaMember {
 	}
 	
 	final Method method;
+	final MethodHandle mh;
+	final boolean isStatic;
 	
 	private JavaMethod(Method m) {
 		super( m.getParameterTypes(), m.getModifiers() );
 		this.method = m;
+		this.isStatic = Modifier.isStatic(m.getModifiers());
+		MethodHandle handle = null;
 		try {
 			if (!m.isAccessible())
 				m.setAccessible(true);
-		} catch (SecurityException s) {
+			MethodHandles.Lookup lookup = MethodHandles.lookup();
+			handle = lookup.unreflect(m);
+		} catch (SecurityException | IllegalAccessException e) {
 		}
+		this.mh = handle;
 	}
 
 	public LuaValue call() {
@@ -93,11 +103,32 @@ class JavaMethod extends JavaMember {
 	LuaValue invokeMethod(Object instance, Varargs args) {
 		Object[] a = convertArgs(args);
 		try {
-			return CoerceJavaToLua.coerce( method.invoke(instance, a) );
+			Object result;
+			if (mh != null) {
+				try {
+					if (isStatic) {
+						result = mh.invokeWithArguments(a);
+					} else {
+						Object[] withInstance = new Object[a.length + 1];
+						withInstance[0] = instance;
+						System.arraycopy(a, 0, withInstance, 1, a.length);
+						result = mh.invokeWithArguments(withInstance);
+					}
+				} catch (LuaError e) {
+					throw e;
+				} catch (Throwable e) {
+					throw new LuaError(e);
+				}
+			} else {
+				result = method.invoke(instance, a);
+			}
+			return CoerceJavaToLua.coerce(result);
 		} catch (InvocationTargetException e) {
 			throw new LuaError(e.getTargetException());
-		} catch (Exception e) {
-			return LuaValue.error("coercion error "+e);
+		} catch (LuaError e) {
+			throw e;
+		} catch (Throwable e) {
+			return error("coercion error " + e);
 		}
 	}
 	
