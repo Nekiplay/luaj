@@ -26,6 +26,7 @@ import java.io.InputStream;
 import java.io.PrintStream;
 import java.io.Reader;
 
+import org.luaj.vm2.compiler.LuaC;
 import org.luaj.vm2.lib.BaseLib;
 import org.luaj.vm2.lib.DebugLib;
 import org.luaj.vm2.lib.IoLib;
@@ -301,7 +302,12 @@ public class Globals extends LuaTable {
 	public Prototype compilePrototype(InputStream stream, String chunkname) throws IOException {
 		if (compiler == null)
 			error("No compiler.");
-		return compiler.compile(stream, chunkname);
+		LuaC.setCompilingGlobals(this);
+		try {
+			return compiler.compile(stream, chunkname);
+		} finally {
+			LuaC.clearCompilingGlobals();
+		}
 	}
 
 	/** Function which yields the current thread. 

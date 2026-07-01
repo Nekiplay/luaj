@@ -25,6 +25,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.Hashtable;
 
+import org.luaj.vm2.Globals;
 import org.luaj.vm2.LocVars;
 import org.luaj.vm2.Lua;
 import org.luaj.vm2.LuaError;
@@ -1194,9 +1195,19 @@ public class LexState extends Constants {
 		if (!(funcName instanceof LuaString))
 			return false;
 
-		String marker = "!LIB:" + libName.tojstring() + "." + funcName.tojstring();
-		int markerIdx = fs.addk(LuaValue.valueOf(marker));
-		v.init(VK, markerIdx);
+		Globals globals = this.L.globals;
+		if (globals == null)
+			return false;
+
+		LuaValue lib = globals.get(libName);
+		if (lib.isnil())
+			return false;
+		LuaValue func = lib.get(funcName);
+		if (!func.isfunction())
+			return false;
+
+		int funcK = fs.addk(func);
+		v.init(VK, funcK);
 		return true;
 	}
 	

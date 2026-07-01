@@ -77,6 +77,20 @@ public class LuaC extends Constants implements Globals.Compiler, Globals.Loader 
 	/** A sharable instance of the LuaC compiler. */
 	public static final LuaC instance = new LuaC();
 	
+	private static final ThreadLocal<Globals> compilingGlobals = new ThreadLocal<>();
+
+	public static void setCompilingGlobals(Globals g) {
+		compilingGlobals.set(g);
+	}
+
+	public static void clearCompilingGlobals() {
+		compilingGlobals.remove();
+	}
+
+	public static Globals getCompilingGlobals() {
+		return compilingGlobals.get();
+	}
+
 	/** Install the compiler so that LoadState will first 
 	 * try to use it when handed bytes that are 
 	 * not already a compiled lua chunk.
@@ -96,44 +110,11 @@ public class LuaC extends Constants implements Globals.Compiler, Globals.Loader 
 	 * @throws IOException
 	 */
 	public Prototype compile(InputStream stream, String chunkname) throws IOException {
-		return (new CompileState()).luaY_parser(stream, chunkname);
+		return (new CompileState(getCompilingGlobals())).luaY_parser(stream, chunkname);
 	}
 
 	public LuaFunction load(Prototype prototype, String chunkname, LuaValue env) throws IOException {
-		resolveLibraryConstants(prototype, env);
 		return new LuaClosure(prototype, env);
-	}
-
-	private static final String LIB_PREFIX = "!LIB:";
-
-	private void resolveLibraryConstants(Prototype p, LuaValue env) {
-		if (p.k != null) {
-			for (int i = 0; i < p.k.length; i++) {
-				LuaValue v = p.k[i];
-				if (v.isstring()) {
-					String s = v.tojstring();
-					if (s.startsWith(LIB_PREFIX)) {
-						String libFunc = s.substring(LIB_PREFIX.length());
-						int dot = libFunc.indexOf('.');
-						if (dot > 0) {
-							String libName = libFunc.substring(0, dot);
-							String funcName = libFunc.substring(dot + 1);
-							LuaValue lib = env.get(libName);
-							if (!lib.isnil()) {
-								p.k[i] = lib.get(funcName);
-							}
-						}
-					}
-				}
-			}
-		}
-		if (p.p != null) {
-			for (int i = 0; i < p.p.length; i++) {
-				if (p.p[i] != null) {
-					resolveLibraryConstants(p.p[i], env);
-				}
-			}
-		}
 	}
 
 	/** @deprecated
@@ -146,8 +127,10 @@ public class LuaC extends Constants implements Globals.Compiler, Globals.Loader 
 
 	static class CompileState {
 		int nCcalls = 0;
+		Globals globals;
 		private Hashtable strings = new Hashtable();
 		protected CompileState() {}
+		protected CompileState(Globals globals) { this.globals = globals; }
 	
 		/** Parse the input */
 		Prototype luaY_parser(InputStream z, String name) throws IOException{
