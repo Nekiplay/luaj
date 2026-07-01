@@ -1173,6 +1173,32 @@ public class LexState extends Constants {
 		this.checkname(key);
 		fs.indexed(v, key);
 	}
+
+	private boolean tryResolveLibFunc(expdesc v, expdesc key) {
+		if (v.k != VINDEXED || v.u.ind_vt != VUPVAL)
+			return false;
+		if (!ISK(v.u.ind_idx))
+			return false;
+		int libIdx = INDEXK(v.u.ind_idx);
+		if (libIdx < 0 || libIdx >= fs.f.k.length)
+			return false;
+		LuaValue libName = fs.f.k[libIdx];
+		if (!(libName instanceof LuaString))
+			return false;
+		if (key.k != VK)
+			return false;
+		int funcIdx = key.u.info;
+		if (funcIdx < 0 || funcIdx >= fs.f.k.length)
+			return false;
+		LuaValue funcName = fs.f.k[funcIdx];
+		if (!(funcName instanceof LuaString))
+			return false;
+
+		String marker = "!LIB:" + libName.tojstring() + "." + funcName.tojstring();
+		int markerIdx = fs.addk(LuaValue.valueOf(marker));
+		v.init(VK, markerIdx);
+		return true;
+	}
 	
 	void yindex(expdesc v) {
 		/* index -> '[' expr ']' */
@@ -1435,7 +1461,15 @@ public class LexState extends Constants {
 		for (;;) {
 			switch (t.token) {
 			case '.': { /* fieldsel */
-				this.fieldsel(v);
+				expdesc key = new expdesc();
+				this.next();
+				this.checkname(key);
+				if ((t.token == '(' || t.token == TK_STRING || t.token == '{')
+				    && tryResolveLibFunc(v, key)) {
+					break;
+				}
+				fs.exp2anyregup(v);
+				fs.indexed(v, key);
 				break;
 			}
 			case '[': { /* `[' exp1 `]' */

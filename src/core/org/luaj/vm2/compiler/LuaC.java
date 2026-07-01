@@ -100,7 +100,40 @@ public class LuaC extends Constants implements Globals.Compiler, Globals.Loader 
 	}
 
 	public LuaFunction load(Prototype prototype, String chunkname, LuaValue env) throws IOException {
+		resolveLibraryConstants(prototype, env);
 		return new LuaClosure(prototype, env);
+	}
+
+	private static final String LIB_PREFIX = "!LIB:";
+
+	private void resolveLibraryConstants(Prototype p, LuaValue env) {
+		if (p.k != null) {
+			for (int i = 0; i < p.k.length; i++) {
+				LuaValue v = p.k[i];
+				if (v.isstring()) {
+					String s = v.tojstring();
+					if (s.startsWith(LIB_PREFIX)) {
+						String libFunc = s.substring(LIB_PREFIX.length());
+						int dot = libFunc.indexOf('.');
+						if (dot > 0) {
+							String libName = libFunc.substring(0, dot);
+							String funcName = libFunc.substring(dot + 1);
+							LuaValue lib = env.get(libName);
+							if (!lib.isnil()) {
+								p.k[i] = lib.get(funcName);
+							}
+						}
+					}
+				}
+			}
+		}
+		if (p.p != null) {
+			for (int i = 0; i < p.p.length; i++) {
+				if (p.p[i] != null) {
+					resolveLibraryConstants(p.p[i], env);
+				}
+			}
+		}
 	}
 
 	/** @deprecated
