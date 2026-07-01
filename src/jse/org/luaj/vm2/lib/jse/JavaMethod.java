@@ -114,10 +114,10 @@ class JavaMethod extends JavaMember {
 					if (isStatic) {
 						result = spreadTarget.invoke(a);
 					} else {
-						Object[] withInstance = new Object[a.length + 1];
-						withInstance[0] = instance;
-						System.arraycopy(a, 0, withInstance, 1, a.length);
-						result = spreadTarget.invoke(withInstance);
+						Object[] wi = new Object[a.length + 1];
+						wi[0] = instance;
+						System.arraycopy(a, 0, wi, 1, a.length);
+						result = spreadTarget.invoke(wi);
 					}
 				} catch (LuaError e) {
 					throw e;

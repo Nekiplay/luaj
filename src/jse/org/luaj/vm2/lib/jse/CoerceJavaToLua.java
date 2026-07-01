@@ -177,6 +177,18 @@ public class CoerceJavaToLua {
 		if ( o == null )
 			return LuaValue.NIL;
 		Class clazz = o.getClass();
+		if (clazz == Integer.class)
+			return LuaInteger.valueOf(((Number)o).intValue());
+		if (clazz == Double.class)
+			return LuaDouble.valueOf(((Number)o).doubleValue());
+		if (clazz == Boolean.class)
+			return ((Boolean)o).booleanValue() ? LuaValue.TRUE : LuaValue.FALSE;
+		if (clazz == String.class)
+			return LuaString.valueOf((String)o);
+		if (clazz == Long.class)
+			return LuaDouble.valueOf(((Number)o).doubleValue());
+		if (clazz == Float.class)
+			return LuaDouble.valueOf(((Number)o).doubleValue());
 		Coercion c = (Coercion) COERCIONS.get( clazz );
 		if ( c == null ) {
 			c = clazz.isArray()? arrayCoercion:
