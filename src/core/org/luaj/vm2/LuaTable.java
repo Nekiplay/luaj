@@ -304,8 +304,9 @@ public class LuaTable extends LuaValue implements Metatable {
 		if ( hashEntries > 0 ) {
 			int index = hashSlot(key, hash.length - 1);
 			for ( Slot slot = hash[index]; slot != null; slot = slot.rest() ) {
-				if ( slot.find( LuaInteger.valueOf(key) ) != null ) {
-					return slot.first().value();
+				StrongSlot found = slot.find( key );
+				if ( found != null ) {
+					return found.value();
 				}
 			}
 		}
@@ -438,9 +439,14 @@ public class LuaTable extends LuaValue implements Metatable {
 		Buffer  sb = new Buffer ();
 		if ( i<=j ) {
 			if ( m_metatable == null && j <= array.length ) {
-				sb.append( array[i-1].checkstring() );
-				while ( ++i<=j )
-					sb.append( sep ).append( array[i-1].checkstring() );
+				LuaValue vv = array[i-1];
+				if (vv == null) error("invalid value (nil) at index " + i);
+				sb.append( vv.checkstring() );
+				while ( ++i<=j ) {
+					vv = array[i-1];
+					if (vv == null) error("invalid value (nil) at index " + i);
+					sb.append( sep ).append( vv.checkstring() );
+				}
 			} else {
 				sb.append( get(i).checkstring() );
 				while ( ++i<=j )
@@ -469,16 +475,31 @@ public class LuaTable extends LuaValue implements Metatable {
 	public int rawlen() {
 		int j = 0;
 		int i = 1;
-		while (!rawget(i).isnil()) {
-			j = i;
-			i <<= 1;
-		}
-		while (i > j + 1) {
-			int k = (j + i) / 2;
-			if (rawget(k).isnil())
-				i = k;
-			else
-				j = k;
+		if ( hashEntries == 0 ) {
+			LuaValue[] a = array;
+			while ( i <= a.length && a[i-1] != null ) {
+				j = i;
+				i <<= 1;
+			}
+			while (i > j + 1) {
+				int k = (j + i) / 2;
+				if ( k > a.length || a[k-1] == null )
+					i = k;
+				else
+					j = k;
+			}
+		} else {
+			while (!rawget(i).isnil()) {
+				j = i;
+				i <<= 1;
+			}
+			while (i > j + 1) {
+				int k = (j + i) / 2;
+				if (rawget(k).isnil())
+					i = k;
+				else
+					j = k;
+			}
 		}
 		return j;
 	}
@@ -613,15 +634,15 @@ public class LuaTable extends LuaValue implements Metatable {
 
 	public void hashset(int key, LuaValue value) {
 		if ( value.isnil() )
-			hashRemove( LuaInteger.valueOf(key) );
+			hashRemove( key );
 		else {
 			int index = 0;
-			LuaValue keyObj = null;
 			if ( hash.length > 0 ) {
 				index = hashSlot( key, hash.length - 1 );
 				for ( Slot slot = hash[ index ]; slot != null; slot = slot.rest() ) {
-					if ( slot.find( LuaInteger.valueOf(key) ) != null ) {
-						hash[index] = hash[index].set( slot.first(), value );
+					StrongSlot found = slot.find( key );
+					if ( found != null ) {
+						hash[index] = hash[index].set( found, value );
 						return;
 					}
 				}
@@ -640,21 +661,20 @@ public class LuaTable extends LuaValue implements Metatable {
 				}
 				index = hashSlot( key, hash.length - 1 );
 			}
-			keyObj = LuaInteger.valueOf(key);
 			Slot entry = ( m_metatable != null )
-				? m_metatable.entry( keyObj, value )
-				: defaultEntry( keyObj, value );
+				? m_metatable.entry( valueOf(key), value )
+				: defaultEntry( valueOf(key), value );
 			hash[ index ] = ( hash[index] != null )	? hash[index].add( entry ) : entry;
 			++hashEntries;
 		}
 	}
 
 	public static int hashpow2( int hashCode, int mask ) {
-		return hashCode & mask;
+		return (hashCode ^ (hashCode >>> 16)) & mask;
 	}
 
 	public static int hashmod( int hashCode, int mask ) {
-		return ( hashCode & 0x7FFFFFFF ) % mask;
+		return (hashCode ^ (hashCode >>> 16)) & mask;
 	}
 
 	/**
@@ -664,20 +684,11 @@ public class LuaTable extends LuaValue implements Metatable {
 	 * @return the slot index
 	 */
 	public static int hashSlot( LuaValue key, int hashMask ) {
-		switch ( key.type() ) {
-		case TNUMBER:
-		case TTABLE:
-		case TTHREAD:
-		case TLIGHTUSERDATA:
-		case TUSERDATA:
-			return hashmod( key.hashCode(), hashMask );
-		default:
-			return hashpow2( key.hashCode(), hashMask );
-		}
+		return hashpow2( key.hashCode(), hashMask );
 	}
 
 	public static int hashSlot( int key, int hashMask ) {
-		return hashmod( LuaInteger.hashCode( key ), hashMask );
+		return hashpow2( LuaInteger.hashCode( key ), hashMask );
 	}
 
 	/**
@@ -703,8 +714,22 @@ public class LuaTable extends LuaValue implements Metatable {
 		}
 	}
 
+	private void hashRemove( int key ) {
+		if ( hash.length > 0 ) {
+			int index = hashSlot(key, hash.length - 1);
+			for ( Slot slot = hash[index]; slot != null; slot = slot.rest() ) {
+				StrongSlot foundSlot;
+				if ( ( foundSlot = slot.find( key ) ) != null ) {
+					hash[index] = hash[index].remove( foundSlot );
+					--hashEntries;
+					return;
+				}
+			}
+		}
+	}
+
 	private boolean checkLoadFactor() {
-		return hashEntries >= hash.length;
+		return hashEntries * 4 >= hash.length * 3;
 	}
 
 	private int countHashKeys() {
@@ -926,7 +951,7 @@ public class LuaTable extends LuaValue implements Metatable {
 		int n = length();
 		if ( n > 1 ) {
 			if ( m_metatable == null && n <= array.length ) {
-				directHeapSort(n, comparator.isnil() ? null : comparator);
+				sortUsingArrays(n, comparator.isnil() ? null : comparator);
 			} else {
 				heapSort(n, comparator.isnil() ? null : comparator);
 			}
@@ -976,44 +1001,26 @@ public class LuaTable extends LuaValue implements Metatable {
 
 	// ---- direct array sort (no metatable fast path) ----
 
-	private void directHeapSort(int count, LuaValue cmpfunc) {
-		directHeapify(count, cmpfunc);
-		for ( int end=count; end>1; ) {
-			LuaValue a = array[end-1];
-			array[end-1] = array[0];
-			array[0] = a;
-			directSiftDown(1, --end, cmpfunc);
+	private void sortUsingArrays(int count, LuaValue cmpfunc) {
+		java.util.Arrays.sort(array, 0, count, cmpfunc != null
+			? new CmpFuncComparator(cmpfunc)
+			: LT_COMPARATOR);
+	}
+
+	private static class CmpFuncComparator implements java.util.Comparator<LuaValue> {
+		private final LuaValue cmpfunc;
+		CmpFuncComparator(LuaValue cmpfunc) { this.cmpfunc = cmpfunc; }
+		public int compare(LuaValue a, LuaValue b) {
+			if ( a == null || b == null ) return 0;
+			return cmpfunc.call(a,b).toboolean() ? -1 : (cmpfunc.call(b,a).toboolean() ? 1 : 0);
 		}
 	}
 
-	private void directHeapify(int count, LuaValue cmpfunc) {
-		for ( int start=count/2; start>0; --start )
-			directSiftDown(start, count, cmpfunc);
-	}
-
-	private void directSiftDown(int start, int end, LuaValue cmpfunc) {
-		for ( int root=start; root*2 <= end; ) {
-			int child = root*2;
-			if (child < end && directCompare(child, child + 1, cmpfunc))
-				++child;
-			if (directCompare(root, child, cmpfunc)) {
-				LuaValue a = array[root-1];
-				array[root-1] = array[child-1];
-				array[child-1] = a;
-				root = child;
-			} else
-				return;
-		}
-	}
-
-	private boolean directCompare(int i, int j, LuaValue cmpfunc) {
-		LuaValue a = array[i-1], b = array[j-1];
-		if ( a == null || b == null )
-			return false;
-		if ( cmpfunc != null ) {
-			return cmpfunc.call(a,b).toboolean();
-		} else {
-			return a.lt_b(b);
+	private static final java.util.Comparator<LuaValue> LT_COMPARATOR = new LtComparator();
+	private static class LtComparator implements java.util.Comparator<LuaValue> {
+		public int compare(LuaValue a, LuaValue b) {
+			if ( a == null || b == null ) return 0;
+			return a.lt_b(b) ? -1 : (b.lt_b(a) ? 1 : 0);
 		}
 	}
 	
@@ -1114,6 +1121,9 @@ public class LuaTable extends LuaValue implements Metatable {
 		/** Compare given key with first()'s key; return first() if equal. */
 		StrongSlot find( LuaValue key );
 
+		/** Compare given int key with first()'s key; return first() if equal. */
+		StrongSlot find( int key );
+
 		/**
 		 * Compare given key with first()'s key; return true if equal. May
 		 * return true for keys no longer present in the table.
@@ -1199,6 +1209,10 @@ public class LuaTable extends LuaValue implements Metatable {
 
 		public StrongSlot find(LuaValue key) {
 			return entry.keyeq(key) ? this : null;
+		}
+
+		public StrongSlot find(int key) {
+			return entry.find(key);
 		}
 
 		public boolean keyeq(LuaValue key) {
@@ -1316,6 +1330,10 @@ public class LuaTable extends LuaValue implements Metatable {
 			return keyeq(key) ? this : null;
 		}
 
+		public StrongSlot find(int key) {
+			return null;
+		}
+
 		public Slot set(StrongSlot target, LuaValue value) {
 			return set( value );
 		}
@@ -1394,6 +1412,10 @@ public class LuaTable extends LuaValue implements Metatable {
 			return this;
 		}
 
+		public StrongSlot find(int key) {
+			return key == this.key ? this : null;
+		}
+
 		public int keyindex( int mask ) {
 			return hashmod( LuaInteger.hashCode( key ), mask );
 		}
@@ -1403,9 +1425,6 @@ public class LuaTable extends LuaValue implements Metatable {
 		}
 	}
 
-	/**
-	 * Entry class used with numeric values, but only when the key is not an integer.
-	 */
 	private static class NumberValueEntry extends Entry {
 		private double value;
 		private final LuaValue key;
@@ -1471,6 +1490,10 @@ public class LuaTable extends LuaValue implements Metatable {
 		}
 
 		public StrongSlot find(LuaValue key) {
+			return null;
+		}
+
+		public StrongSlot find(int key) {
 			return null;
 		}
 

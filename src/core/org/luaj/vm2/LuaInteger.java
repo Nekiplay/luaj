@@ -42,14 +42,26 @@ import org.luaj.vm2.lib.MathLib;
  */
 public class LuaInteger extends LuaNumber {
 
-	private static final LuaInteger[] intValues = new LuaInteger[2048];
+	private static final int MIN_CACHED = -4096;
+	private static final int MAX_CACHED = 4095;
+	private static final LuaInteger[] intValues = new LuaInteger[MAX_CACHED - MIN_CACHED + 1];
+	private static final LuaString[] strValues;
 	static {
-		for ( int i=0; i<2048; i++ )
-			intValues[i] = new LuaInteger(i-1024);
+		LuaString[] s = new LuaString[intValues.length];
+		for ( int i=MIN_CACHED, j=0; i<=MAX_CACHED; i++, j++ ) {
+			intValues[j] = new LuaInteger(i);
+			String str = Integer.toString(i);
+			byte[] b = str.getBytes();
+			s[j] = LuaString.valueUsing(b, 0, b.length);
+		}
+		strValues = s;
+	}
+	private static LuaString cachedStr(int i) {
+		return strValues[i - MIN_CACHED];
 	}
 
 	public static LuaInteger valueOf(int i) {
-		return i<=1023 && i>=-1024? intValues[i+1024]: new LuaInteger(i);
+		return i>=MIN_CACHED && i<=MAX_CACHED? intValues[i - MIN_CACHED]: new LuaInteger(i);
 	};
 	
 	 // TODO consider moving this to LuaValue
@@ -61,9 +73,7 @@ public class LuaInteger extends LuaNumber {
 	 */
 	public static LuaNumber valueOf(long l) {
 		int i = (int) l;
-		return l==i? (i<=1023 && i>=-1024? intValues[i+1024]:
-			(LuaNumber) new LuaInteger(i)):
-			(LuaNumber) LuaDouble.valueOf(l);
+		return l==i? (LuaNumber) LuaInteger.valueOf(i): (LuaNumber) LuaDouble.valueOf(l);
 	}
 	
 	/** The value being held by this instance. */
@@ -99,15 +109,15 @@ public class LuaInteger extends LuaNumber {
 	}
 
 	public LuaString strvalue() {
-		return LuaString.valueOf(Integer.toString(v));
+		return v>=MIN_CACHED && v<=MAX_CACHED ? cachedStr(v) : LuaString.valueOf(Integer.toString(v));
 	}
 		
 	public LuaString optstring(LuaString defval) {
-		return LuaString.valueOf(Integer.toString(v));
+		return v>=MIN_CACHED && v<=MAX_CACHED ? cachedStr(v) : LuaString.valueOf(Integer.toString(v));
 	}
 	
 	public LuaValue tostring() {
-		return LuaString.valueOf(Integer.toString(v));
+		return v>=MIN_CACHED && v<=MAX_CACHED ? cachedStr(v) : LuaString.valueOf(Integer.toString(v));
 	}
 		
 	public String optjstring(String defval) {

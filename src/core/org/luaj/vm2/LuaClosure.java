@@ -274,53 +274,55 @@ public class LuaClosure extends LuaFunction {
 					stack[a] = o.get((c>0xff? k[c&0x0ff]: stack[c]));
 					continue;
 					
-				case Lua.OP_ADD: /*	A B C	R(A):= RK(B) + RK(C)				*/
-					stack[a] = (b>0xff? k[b&0x0ff]: stack[b]).add((c>0xff? k[c&0x0ff]: stack[c]));
+				case Lua.OP_ADD:
+				case Lua.OP_SUB:
+				case Lua.OP_MUL:
+				case Lua.OP_DIV:
+				case Lua.OP_MOD:
+				case Lua.OP_POW:
+				case Lua.OP_IDIV:
+				case Lua.OP_BAND:
+				case Lua.OP_BOR:
+				case Lua.OP_BXOR:
+				case Lua.OP_SHL:
+				case Lua.OP_SHR: {
+					/* A B C	R(A):= RK(B) op RK(C) */
+					LuaValue vb = (b>0xff? k[b&0x0ff]: stack[b]);
+					LuaValue vc = (c>0xff? k[c&0x0ff]: stack[c]);
+					if (vb instanceof LuaInteger && vc instanceof LuaInteger) {
+						int ib = ((LuaInteger)vb).v;
+						int ic = ((LuaInteger)vc).v;
+						switch (i & 0x3f) {
+						case Lua.OP_ADD:  stack[a] = LuaInteger.valueOf(ib + (long)ic); continue;
+						case Lua.OP_SUB:  stack[a] = LuaInteger.valueOf(ib - (long)ic); continue;
+						case Lua.OP_MUL:  stack[a] = LuaInteger.valueOf(ib * (long)ic); continue;
+						case Lua.OP_DIV:  stack[a] = LuaDouble.ddiv(ib, ic); continue;
+						case Lua.OP_MOD:  stack[a] = LuaDouble.dmod(ib, ic); continue;
+						case Lua.OP_POW:  stack[a] = MathLib.dpow(ib, ic); continue;
+						case Lua.OP_IDIV: stack[a] = LuaDouble.didiv(ib, ic); continue;
+						case Lua.OP_BAND: stack[a] = LuaInteger.valueOf(ib & ic); continue;
+						case Lua.OP_BOR:  stack[a] = LuaInteger.valueOf(ib | ic); continue;
+						case Lua.OP_BXOR: stack[a] = LuaInteger.valueOf(ib ^ ic); continue;
+						case Lua.OP_SHL:  stack[a] = LuaLong.valueOf(((long)ib) << ic); continue;
+						case Lua.OP_SHR:  stack[a] = LuaLong.valueOf(((long)ib) >> ic); continue;
+						}
+					}
+					switch (i & 0x3f) {
+					case Lua.OP_ADD:  stack[a] = vb.add(vc); continue;
+					case Lua.OP_SUB:  stack[a] = vb.sub(vc); continue;
+					case Lua.OP_MUL:  stack[a] = vb.mul(vc); continue;
+					case Lua.OP_DIV:  stack[a] = vb.div(vc); continue;
+					case Lua.OP_MOD:  stack[a] = vb.mod(vc); continue;
+					case Lua.OP_POW:  stack[a] = vb.pow(vc); continue;
+					case Lua.OP_IDIV: stack[a] = vb.idiv(vc); continue;
+					case Lua.OP_BAND: stack[a] = vb.band(vc); continue;
+					case Lua.OP_BOR:  stack[a] = vb.bor(vc); continue;
+					case Lua.OP_BXOR: stack[a] = vb.bxor(vc); continue;
+					case Lua.OP_SHL:  stack[a] = vb.shl(vc); continue;
+					case Lua.OP_SHR:  stack[a] = vb.shr(vc); continue;
+					}
 					continue;
-					
-				case Lua.OP_SUB: /*	A B C	R(A):= RK(B) - RK(C)				*/
-					stack[a] = (b>0xff? k[b&0x0ff]: stack[b]).sub((c>0xff? k[c&0x0ff]: stack[c]));
-					continue;
-					
-				case Lua.OP_MUL: /*	A B C	R(A):= RK(B) * RK(C)				*/
-					stack[a] = (b>0xff? k[b&0x0ff]: stack[b]).mul((c>0xff? k[c&0x0ff]: stack[c]));
-					continue;
-					
-				case Lua.OP_DIV: /*	A B C	R(A):= RK(B) / RK(C)				*/
-					stack[a] = (b>0xff? k[b&0x0ff]: stack[b]).div((c>0xff? k[c&0x0ff]: stack[c]));
-					continue;
-					
-				case Lua.OP_MOD: /*	A B C	R(A):= RK(B) % RK(C)				*/
-					stack[a] = (b>0xff? k[b&0x0ff]: stack[b]).mod((c>0xff? k[c&0x0ff]: stack[c]));
-					continue;
-					
-				case Lua.OP_POW: /*	A B C	R(A):= RK(B) ^ RK(C)				*/
-					stack[a] = (b>0xff? k[b&0x0ff]: stack[b]).pow((c>0xff? k[c&0x0ff]: stack[c]));
-					continue;
-					
-				case Lua.OP_IDIV: /*	A B C	R(A):= RK(B) // RK(C)				*/
-					stack[a] = (b>0xff? k[b&0x0ff]: stack[b]).idiv((c>0xff? k[c&0x0ff]: stack[c]));
-					continue;
-					
-				case Lua.OP_BAND: /*	A B C	R(A):= RK(B) & RK(C)				*/
-					stack[a] = (b>0xff? k[b&0x0ff]: stack[b]).band((c>0xff? k[c&0x0ff]: stack[c]));
-					continue;
-					
-				case Lua.OP_BOR: /*	A B C	R(A):= RK(B) | RK(C)				*/
-					stack[a] = (b>0xff? k[b&0x0ff]: stack[b]).bor((c>0xff? k[c&0x0ff]: stack[c]));
-					continue;
-					
-				case Lua.OP_BXOR: /*	A B C	R(A):= RK(B) ~ RK(C)				*/
-					stack[a] = (b>0xff? k[b&0x0ff]: stack[b]).bxor((c>0xff? k[c&0x0ff]: stack[c]));
-					continue;
-					
-				case Lua.OP_SHL: /*	A B C	R(A):= RK(B) << RK(C)				*/
-					stack[a] = (b>0xff? k[b&0x0ff]: stack[b]).shl((c>0xff? k[c&0x0ff]: stack[c]));
-					continue;
-					
-				case Lua.OP_SHR: /*	A B C	R(A):= RK(B) >> RK(C)				*/
-					stack[a] = (b>0xff? k[b&0x0ff]: stack[b]).shr((c>0xff? k[c&0x0ff]: stack[c]));
-					continue;
+				}
 					
 				case Lua.OP_UNM: /*	A B	R(A):= -R(B)					*/
 					stack[a] = stack[b].neg();

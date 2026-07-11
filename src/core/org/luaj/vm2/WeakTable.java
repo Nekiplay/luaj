@@ -130,6 +130,10 @@ public class WeakTable implements Metatable {
 			return ( first != null ) ? first.find( key ) : null;
 		}
 
+		public StrongSlot find(int key) {
+			return null;
+		}
+
 		public boolean keyeq(LuaValue key) {
 			StrongSlot first = first();
 			return ( first != null ) && first.keyeq( key );
