@@ -63,6 +63,7 @@ public class TableLib extends TwoArgFunction {
 	 */
 	public LuaValue call(LuaValue modname, LuaValue env) {
 		LuaTable table = new LuaTable();
+		table.set("clear", new clear());
 		table.set("concat", new concat());
 		table.set("insert", new insert());
 		table.set("pack", new pack());
@@ -74,6 +75,14 @@ public class TableLib extends TwoArgFunction {
 		return NIL;
 	}
 	
+	// "clear" (table) -> void
+	static class clear extends TableLibFunction {
+		public LuaValue call(LuaValue table) {
+			table.checktable().clear();
+			return NONE;
+		}
+	}
+
 	// "concat" (table [, sep [, i [, j]]]) -> string
 	static class concat extends TableLibFunction {
 		public LuaValue call(LuaValue list) {

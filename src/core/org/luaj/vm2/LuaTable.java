@@ -185,6 +185,12 @@ public class LuaTable extends LuaValue implements Metatable {
 			array = resize( array, 1 << log2(narray) );
 	}
 
+	public void clear() {
+		java.util.Arrays.fill(array, null);
+		java.util.Arrays.fill(hash, null);
+		hashEntries = 0;
+	}
+
 	public void presize(int narray, int nhash) {
 		if ( nhash > 0 && nhash < MIN_HASH_CAPACITY )
 			nhash = MIN_HASH_CAPACITY;
@@ -1472,12 +1478,12 @@ public class LuaTable extends LuaValue implements Metatable {
 		private Slot next;
 
 		private DeadSlot( LuaValue key, Slot next ) {
-			this.key = isLargeKey(key) ? new WeakReference( key ) : (Object)key;
+			this.key = new WeakReference( key );
 			this.next = next;
 		}
 
 		private LuaValue key() {
-			return (LuaValue) (key instanceof WeakReference ? ((WeakReference) key).get() : key);
+			return (LuaValue) ((WeakReference) key).get();
 		}
 
 		public int keyindex(int hashMask) {
