@@ -41,7 +41,7 @@ import org.luaj.vm2.LuaValue;
  * Will respond to get() and set() by returning field values, or java methods. 
  * <p>
  * This class is not used directly.  
- * It is returned by calls to {@link CoerceJavaToLua#coerce(Object)} 
+ * It is returned by calls to {@link CoerceJavaToLua#coerce(Object)}
  * when a Class is supplied.
  * @see CoerceJavaToLua
  * @see CoerceLuaToJava
@@ -51,18 +51,18 @@ class JavaClass extends JavaInstance implements CoerceJavaToLua.Coercion {
 	static final Map classes = new ConcurrentHashMap();
 
 	static final LuaValue NEW = valueOf("new");
-	
+
 	Map fields;
 	Map methods;
 	Map innerclasses;
-	
+
 	static JavaClass forClass(Class c) {
 		JavaClass j = (JavaClass) classes.get(c);
 		if ( j == null )
 			classes.put( c, j = new JavaClass(c) );
 		return j;
 	}
-	
+
 	JavaClass(Class c) {
 		super(c);
 		this.jclass = this;
@@ -71,76 +71,93 @@ class JavaClass extends JavaInstance implements CoerceJavaToLua.Coercion {
 	public LuaValue coerce(Object javaValue) {
 		return this;
 	}
-		
+
 	Field getField(LuaValue key) {
 		if ( fields == null ) {
 			Map m = new HashMap();
-			Field[] f = ((Class)m_instance).getFields();
-			for ( int i=0; i<f.length; i++ ) {
-				Field fi = f[i];
-				if ( Modifier.isPublic(fi.getModifiers()) ) {
-					m.put(LuaValue.valueOf(fi.getName()), fi);
-					try {
-						if (!fi.isAccessible())
-							fi.setAccessible(true);
-					} catch (SecurityException s) {
+			try {
+				Field[] f = ((Class)m_instance).getFields();
+				for ( int i=0; i<f.length; i++ ) {
+					Field fi = f[i];
+					if ( Modifier.isPublic(fi.getModifiers()) ) {
+						m.put(LuaValue.valueOf(fi.getName()), fi);
+						try {
+							if (!fi.isAccessible())
+								fi.setAccessible(true);
+						} catch (SecurityException s) {
+						}
 					}
 				}
+			} catch (Throwable t) {
+				// Безопасно ловим любые NoClassDefFoundError / LinkageError
 			}
 			fields = m;
 		}
 		return (Field) fields.get(key);
 	}
-	
+
 	LuaValue getMethod(LuaValue key) {
 		if ( methods == null ) {
 			Map namedlists = new HashMap();
-			Method[] m = ((Class)m_instance).getMethods();
-			for ( int i=0; i<m.length; i++ ) {
-				Method mi = m[i];
-				if ( Modifier.isPublic( mi.getModifiers()) ) {
-					String name = mi.getName();
-					List list = (List) namedlists.get(name);
-					if ( list == null )
-						namedlists.put(name, list = new ArrayList());
-					list.add( JavaMethod.forMethod(mi) );
+			try {
+				Method[] m = ((Class)m_instance).getMethods();
+				for ( int i=0; i<m.length; i++ ) {
+					Method mi = m[i];
+					if ( Modifier.isPublic( mi.getModifiers()) ) {
+						String name = mi.getName();
+						List list = (List) namedlists.get(name);
+						if ( list == null )
+							namedlists.put(name, list = new ArrayList());
+						list.add( JavaMethod.forMethod(mi) );
+					}
 				}
+			} catch (Throwable t) {
 			}
+
 			Map map = new HashMap();
-			Constructor[] c = ((Class)m_instance).getConstructors();
-			List list = new ArrayList();
-			for ( int i=0; i<c.length; i++ ) 
-				if ( Modifier.isPublic(c[i].getModifiers()) )
-					list.add( JavaConstructor.forConstructor(c[i]) );
-			switch ( list.size() ) {
-			case 0: break;
-			case 1: map.put(NEW, list.get(0)); break;
-			default: map.put(NEW, JavaConstructor.forConstructors( (JavaConstructor[])list.toArray(new JavaConstructor[list.size()]) ) ); break;
+			try {
+				Constructor[] c = ((Class)m_instance).getConstructors();
+				List list = new ArrayList();
+				for ( int i=0; i<c.length; i++ )
+					if ( Modifier.isPublic(c[i].getModifiers()) )
+						list.add( JavaConstructor.forConstructor(c[i]) );
+				switch ( list.size() ) {
+					case 0: break;
+					case 1: map.put(NEW, list.get(0)); break;
+					default: map.put(NEW, JavaConstructor.forConstructors( (JavaConstructor[])list.toArray(new JavaConstructor[list.size()]) ) ); break;
+				}
+			} catch (Throwable t) {
 			}
-			
-			for ( Iterator it=namedlists.entrySet().iterator(); it.hasNext(); ) {
-				Entry e = (Entry) it.next();
-				String name = (String) e.getKey();
-				List methods = (List) e.getValue();
-				map.put( LuaValue.valueOf(name),
-					methods.size()==1? 
-						methods.get(0): 
-						JavaMethod.forMethods( (JavaMethod[])methods.toArray(new JavaMethod[methods.size()])) );
+
+			try {
+				for ( Iterator it=namedlists.entrySet().iterator(); it.hasNext(); ) {
+					Entry e = (Entry) it.next();
+					String name = (String) e.getKey();
+					List methods = (List) e.getValue();
+					map.put( LuaValue.valueOf(name),
+							methods.size()==1?
+									methods.get(0):
+									JavaMethod.forMethods( (JavaMethod[])methods.toArray(new JavaMethod[methods.size()])) );
+				}
+			} catch (Throwable t) {
 			}
 			methods = map;
 		}
 		return (LuaValue) methods.get(key);
 	}
-	
+
 	Class getInnerClass(LuaValue key) {
 		if ( innerclasses == null ) {
 			Map m = new HashMap();
-			Class[] c = ((Class)m_instance).getClasses();
-			for ( int i=0; i<c.length; i++ ) {
-				Class ci = c[i];
-				String name = ci.getName();
-				String stub = name.substring(Math.max(name.lastIndexOf('$'), name.lastIndexOf('.'))+1);
-				m.put(LuaValue.valueOf(stub), ci);
+			try {
+				Class[] c = ((Class)m_instance).getClasses();
+				for ( int i=0; i<c.length; i++ ) {
+					Class ci = c[i];
+					String name = ci.getName();
+					String stub = name.substring(Math.max(name.lastIndexOf('$'), name.lastIndexOf('.'))+1);
+					m.put(LuaValue.valueOf(stub), ci);
+				}
+			} catch (Throwable t) {
 			}
 			innerclasses = m;
 		}
@@ -149,5 +166,14 @@ class JavaClass extends JavaInstance implements CoerceJavaToLua.Coercion {
 
 	public LuaValue getConstructor() {
 		return getMethod(NEW);
+	}
+
+	@Override
+	public LuaValue get(LuaValue key) {
+		String name = key.tojstring();
+		if ("javaClass".equals(name) || "class".equals(name)) {
+			return new JavaInstance(this.m_instance);
+		}
+		return super.get(key);
 	}
 }
