@@ -40,13 +40,13 @@ import org.luaj.vm2.LuaValue;
  * @see CoerceJavaToLua
  * @see CoerceLuaToJava
  */
-class JavaInstance extends LuaUserdata {
+public class JavaInstance extends LuaUserdata {
 
 	JavaClass jclass;
 	Map accessorCache;
 	static final Object NOT_FOUND = new Object();
 
-	JavaInstance(Object instance) {
+	public JavaInstance(Object instance) {
 		super(instance);
 	}
 

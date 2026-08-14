@@ -38,7 +38,7 @@ import org.luaj.vm2.lib.jse.CoerceLuaToJava.Coercion;
  * @see CoerceJavaToLua
  * @see CoerceLuaToJava
  */
-abstract
+public abstract
 class JavaMember extends VarArgFunction {
 	
 	static final int METHOD_MODIFIERS_VARARGS = 0x80;

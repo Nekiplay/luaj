@@ -44,11 +44,11 @@ import org.luaj.vm2.lib.VarArgFunction;
  * @see CoerceJavaToLua
  * @see CoerceLuaToJava
  */
-class JavaConstructor extends JavaMember {
+public class JavaConstructor extends JavaMember {
 
 	static final Map constructors = new ConcurrentHashMap();
 	
-	static JavaConstructor forConstructor(Constructor c) {
+	public static JavaConstructor forConstructor(Constructor c) {
 		JavaConstructor j = (JavaConstructor) constructors.get(c);
 		if ( j == null )
 			constructors.put( c, j = new JavaConstructor(c) );
@@ -86,7 +86,7 @@ class JavaConstructor extends JavaMember {
 	 * It is returned by calls to calls to {@link JavaClass#get(LuaValue key)} 
 	 * when key is "new" and there is more than one public constructor.
 	 */
-	static class Overload extends VarArgFunction {
+	public static class Overload extends VarArgFunction {
 		final JavaConstructor[] constructors;
 		final Map cache;
 

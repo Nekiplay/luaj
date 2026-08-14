@@ -47,18 +47,18 @@ import org.luaj.vm2.Varargs;
  * @see CoerceJavaToLua
  * @see CoerceLuaToJava
  */
-class JavaMethod extends JavaMember {
+public class JavaMethod extends JavaMember {
 
 	static final Map methods = new ConcurrentHashMap();
 	
-	static JavaMethod forMethod(Method m) {
+	public static JavaMethod forMethod(Method m) {
 		JavaMethod j = (JavaMethod) methods.get(m);
 		if ( j == null )
 			methods.put( m, j = new JavaMethod(m) );
 		return j;
 	}
 	
-	static LuaFunction forMethods(JavaMethod[] m) {
+	public static LuaFunction forMethods(JavaMethod[] m) {
 		return new Overload(m);
 	}
 	
@@ -146,7 +146,7 @@ class JavaMethod extends JavaMember {
 	 * It is returned by calls to calls to {@link JavaInstance#get(LuaValue key)} 
 	 * when an overloaded method is named.
 	 */
-	static class Overload extends LuaFunction {
+	public static class Overload extends LuaFunction {
 
 		final JavaMethod[] methods;
 		final Map cache;

@@ -46,7 +46,7 @@ import org.luaj.vm2.LuaValue;
  * @see CoerceJavaToLua
  * @see CoerceLuaToJava
  */
-class JavaClass extends JavaInstance implements CoerceJavaToLua.Coercion {
+public class JavaClass extends JavaInstance implements CoerceJavaToLua.Coercion {
 
 	static final Map classes = new ConcurrentHashMap();
 
@@ -56,14 +56,14 @@ class JavaClass extends JavaInstance implements CoerceJavaToLua.Coercion {
 	Map methods;
 	Map innerclasses;
 
-	static JavaClass forClass(Class c) {
+	public static JavaClass forClass(Class c) {
 		JavaClass j = (JavaClass) classes.get(c);
 		if ( j == null )
 			classes.put( c, j = new JavaClass(c) );
 		return j;
 	}
 
-	JavaClass(Class c) {
+	public JavaClass(Class c) {
 		super(c);
 		this.jclass = this;
 	}
@@ -72,7 +72,7 @@ class JavaClass extends JavaInstance implements CoerceJavaToLua.Coercion {
 		return this;
 	}
 
-	Field getField(LuaValue key) {
+	public Field getField(LuaValue key) {
 		if ( fields == null ) {
 			Map m = new HashMap();
 			try {
@@ -96,7 +96,7 @@ class JavaClass extends JavaInstance implements CoerceJavaToLua.Coercion {
 		return (Field) fields.get(key);
 	}
 
-	LuaValue getMethod(LuaValue key) {
+	public LuaValue getMethod(LuaValue key) {
 		if ( methods == null ) {
 			Map namedlists = new HashMap();
 			try {
@@ -146,7 +146,7 @@ class JavaClass extends JavaInstance implements CoerceJavaToLua.Coercion {
 		return (LuaValue) methods.get(key);
 	}
 
-	Class getInnerClass(LuaValue key) {
+	public Class getInnerClass(LuaValue key) {
 		if ( innerclasses == null ) {
 			Map m = new HashMap();
 			try {
