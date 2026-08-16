@@ -23,10 +23,14 @@ package org.luaj.vm2.lib.jse;
 
 
 import java.lang.reflect.Array;
+import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.lang.reflect.Modifier;
 import java.lang.reflect.Proxy;
+import java.util.ArrayList;
+import java.util.List;
 
 import org.luaj.vm2.Globals;
 import org.luaj.vm2.LuaError;
@@ -89,6 +93,9 @@ public class LuajavaLib extends VarArgFunction {
 	static final int NEW			= 3;
 	static final int CREATEPROXY	= 4;
 	static final int LOADLIB		= 5;
+	static final int CREATECLASS	= 6;
+	static final int INSTANCEOF		= 7;
+	static final int CAST			= 8;
 
 	static final String[] NAMES = {
 		"bindClass",
@@ -96,6 +103,9 @@ public class LuajavaLib extends VarArgFunction {
 		"new",
 		"createProxy",
 		"loadLib",
+		"createClass",
+		"instanceof",
+		"cast",
 	};
 	
 	static final int METHOD_MODIFIERS_VARARGS = 0x80;
@@ -160,6 +170,69 @@ public class LuajavaLib extends VarArgFunction {
 				} else {
 					return NIL;
 				}
+			}
+			case CREATECLASS: {
+				final int n = args.narg();
+				if ( n < 1 )
+					throw new LuaError("createClass requires a methods table");
+				final LuaValue table = args.arg(n);
+				if ( ! table.istable() )
+					throw new LuaError("createClass requires a methods table as the last argument");
+				Class superclass = Object.class;
+				final List ifaces = new ArrayList();
+				for ( int i=1; i<n; i++ ) {
+					Class c = classForName(args.checkjstring(i));
+					if ( c.isInterface() ) {
+						ifaces.add(c);
+					} else if ( i == 1 ) {
+						superclass = c;
+					} else {
+						throw new LuaError("class "+c.getName()+" is not an interface");
+					}
+				}
+				if ( Modifier.isFinal(superclass.getModifiers()) )
+					throw new LuaError("cannot extend final class "+superclass.getName());
+				final Class[] ifaceArray = (Class[]) ifaces.toArray(new Class[ifaces.size()]);
+				final Class generated = new JavaClassGenerator(superclass, ifaceArray, (LuaTable) table).generate();
+				LuaSubclassHelper.setMethods(generated, table);
+				final Constructor[] cs = generated.getConstructors();
+				if ( cs.length == 0 )
+					throw new LuaError("class "+superclass.getName()+" has no public constructors");
+				final JavaConstructor[] cts = new JavaConstructor[cs.length];
+				for ( int i=0; i<cs.length; i++ )
+					cts[i] = JavaConstructor.forConstructor(cs[i]);
+				final LuaValue ctors = JavaConstructor.forConstructors(cts);
+				final LuaTable cls = new LuaTable();
+				cls.set("new", new VarArgFunction() {
+					public Varargs invoke(Varargs cargs) {
+						Varargs ctorArgs = cargs.arg1() == cls ? cargs.subargs(2) : cargs.subargs(1);
+						LuaValue inst = ctors.invoke(ctorArgs).arg1();
+						return new LuaSubclassInstance(inst.touserdata(), table);
+					}
+				});
+				return cls;
+			}
+			case INSTANCEOF: {
+				Object obj = args.arg(1).touserdata();
+				String classname = args.checkjstring(2);
+				Class c = classForName(classname);
+				if ( obj instanceof Class )
+					return valueOf(c.isAssignableFrom((Class) obj));
+				return valueOf(c.isInstance(obj));
+			}
+			case CAST: {
+				LuaValue v = args.arg(1);
+				Object obj = v.touserdata();
+				String classname = args.checkjstring(2);
+				Class c = classForName(classname);
+				if ( obj instanceof Class ) {
+					Class k = (Class) obj;
+					if ( ! c.isAssignableFrom(k) )
+						throw new LuaError("cannot cast class "+k.getName()+" to "+classname);
+				} else if ( ! c.isInstance(obj) ) {
+					throw new LuaError("cannot cast "+obj.getClass().getName()+" to "+classname);
+				}
+				return v;
 			}
 			default:
 				throw new LuaError("not yet supported: "+this);

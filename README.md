@@ -599,6 +599,60 @@ The Java ME platform does not include this library, and it cannot be made to wor
 <p>
 The <em>lua</em> connand line tool includes <em>luajava</em>. 
 
+<h3><a name="createclass">Creating Java subclasses from Lua</a></h3>
+The <em>luajava.createClass</em> function generates a real Java subclass at runtime that extends
+a Java superclass and/or implements one or more Java interfaces, and dispatches overridden
+methods to Lua functions.  The generated class can be instantiated with <em>new</em>, and
+instances passed to Java code that accepts the superclass or interface type.
+
+<pre>
+	cls = luajava.createClass( "org.luaj.vm2.lib.jse.TestBaseClass", {
+		base_method = function(self) return "lua-base" end,
+		toString = function(self) return "lua-object" end,
+	} )
+	o = cls:new( "arg" )
+</pre>
+
+<p>
+The first argument is the name of the superclass, which may be an abstract class or a concrete
+class with a public constructor.  One or more interfaces may follow; the last argument is a table
+of functions that override non-final methods and implement interface methods.  The <em>self</em>
+argument passed to each Lua method is the generated Java instance, bound so that fields and
+methods can be accessed with the usual luajava syntax.
+
+<p>
+Inside an overridden method, <em>self.super</em> refers to the parent implementation, and can be
+called with the same arguments as the current method:
+
+<pre>
+	cls = luajava.createClass( "org.luaj.vm2.lib.jse.TestBaseClass", {
+		base_method = function(self) return "wrapped(" .. self.super:base_method() .. ")" end,
+	} )
+</pre>
+
+<p>
+Methods that are abstract and not implemented in Lua throw <em>AbstractMethodError</em> when
+invoked.  Final classes, final methods, and methods with ambiguous overloads cannot be
+overridden and raise a Lua error.
+
+<p>
+Use <em>luajava.instanceof</em> to check the type of an instance or the inheritance of a bound
+class:
+
+<pre>
+	ok = luajava.instanceof( o, "org.luaj.vm2.lib.jse.TestInterface" )  -- instance check
+	ok = luajava.instanceof( t, "java.lang.Object" )                    -- class inheritance check
+</pre>
+
+<p>
+Use <em>luajava.cast</em> to assert that a value is assignable to a type; it raises a Lua error
+when the cast is not possible and otherwise returns the value unchanged:
+
+<pre>
+	o2 = luajava.cast( o, "org.luaj.vm2.lib.jse.TestInterface" )
+	ok, err = pcall( luajava.cast, o, "java.lang.String" )   -- false, cast error
+</pre>
+
 <h1>5 - <a name="5">LuaJ API</a></h1>
 
 <h2>API Javadoc</h2>
